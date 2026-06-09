@@ -1,0 +1,21 @@
+# Regenerated build artifacts (rebuild with `scad build` / `nix build`)
+output/
+*.stl
+*.3mf
+
+# Committed previews live at projects/<name>/preview.png and are PNGs, so they
+# are not matched above and stay tracked.
+
+# Nix
+result
+result-*
+.direnv/
+
+# Python bytecode cache
+__pycache__/
+*.pyc
+
+# Editor / OS noise
+*.swp
+*~
+.DS_Store
