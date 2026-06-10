@@ -210,13 +210,20 @@ You can't press F5/F6 or interact with the `% # ! *` modifiers. Lean on:
 - **Reach for a section view** the moment a feature is hidden inside the part — don't guess from
   the silhouette.
 
-## Each project's README
+## Each project's README and project.toml
 
-Keep it short:
+Keep the README short — it's the prose document (rendered on the project's gallery page):
 - **One-line description** of the part and its purpose.
 - **Key parameters** (the named top-of-file vars: dimensions, wall, clearances, fastener sizes).
 - **Print notes**: recommended orientation (which face on the bed), layer height, and whether
   supports are needed (and where).
 
+Structured facts belong in `projects/<project>/project.toml`, not in README prose: print
+settings (`[print]`), hardware (`[[bom]]`), tags/status, related links, and `[[parts]]` for
+multi-part projects (each adds `<project>-<part>.stl/.3mf` artifacts built with its `-D`
+defines). Whenever hardware or print guidance changes, update project.toml and run
+`scad validate <project>` before finishing.
+
 When the part is final, refresh the gallery image with `scad preview <project>` (writes the
-committed `projects/<project>/preview.png`).
+committed `projects/<project>/preview.png`) and set `status = "released"` in project.toml.
+The gallery site itself regenerates automatically on push to `main`.

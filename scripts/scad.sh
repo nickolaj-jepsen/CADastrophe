@@ -8,6 +8,7 @@
 
 SCAD_LIB="${SCAD_LIB:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 REPORT_PY="$SCAD_LIB/geometry_report.py"
+META_PY="$SCAD_LIB/project_meta.py"
 FONT="DejaVu-Sans"
 IMGSIZE="${SCAD_IMGSIZE:-900,900}"
 COLORSCHEME="${SCAD_COLORSCHEME:-Tomorrow}"
@@ -94,6 +95,20 @@ build_stl() {  # scad out
     openscad --backend=Manifold --export-format=binstl "${defs[@]}" -o "$2" "$1"
 }
 
+# Headless 3MF export (format inferred from the .3mf extension).
+build_3mf() {  # scad out
+  local defs=() d
+  for d in "${SCAD_DEFINES[@]}"; do defs+=(-D "$d"); done
+  env -u DISPLAY -u WAYLAND_DISPLAY QT_QPA_PLATFORM=offscreen \
+    openscad --backend=Manifold "${defs[@]}" -o "$2" "$1"
+}
+
+# Emit each [[parts]] entry from project.toml as "name<TAB>define...". Empty
+# output (and success) when there is no project.toml or no parts.
+project_parts() {  # name
+  python3 "$META_PY" "$ROOT/projects/$1" --parts
+}
+
 # Headless PNG render of one view. rot = "rx,ry,rz".
 render_png() {  # scad out rot [extra openscad args...]
   local scad="$1" out="$2" rot="$3"; shift 3
@@ -155,8 +170,39 @@ SCAD_BODY
     printf '**Print:** orientation / 0.2 mm layers / supports? \n\n'
     printf '![preview](preview.png)\n'
   } > "$dir/README.md"
+  {
+    printf '# Metadata for the gallery site and release pipeline. All keys are\n'
+    printf '# optional — delete what does not apply. `scad validate %s` checks it.\n\n' "$name"
+    printf '[project]\ntitle = "%s"\ndescription = ""\nstatus = "wip"              # wip | released\ntags = []\n\n' "$name"
+    cat <<'TOML_TAIL'
+# Multi-part projects: one [[parts]] block per body. Each adds
+# <name>-<part>.stl/.3mf artifacts next to the full <name>.stl.
+# [[parts]]
+# name = "bracket"
+# defines = ['part="bracket"']
+
+# [print]
+# material = "PLA"
+# layer_height_mm = 0.2
+# infill = "20%"
+# walls = 3
+# supports = false
+# orientation = ""
+# notes = ""
+
+# [[bom]]
+# name = "M4x10 socket head"
+# qty = 4
+# spec = ""
+# link = ""
+
+# [[links]]
+# label = ""
+# url = ""
+TOML_TAIL
+  } > "$dir/project.toml"
   echo "Created projects/$name/"
-  echo "Next: edit projects/$name/$name.scad, then run: scad render $name && scad verify $name"
+  echo "Next: edit projects/$name/$name.scad and project.toml, then run: scad render $name && scad verify $name"
 }
 
 # Build a temp section/cutaway .scad (OpenSCAD does the float math) and render it.
@@ -289,9 +335,27 @@ build_one() {
   scad="$(project_scad "$name")" || return 1
   outdir="$(project_outdir "$name")" || return 1
   build_stl "$scad" "$outdir/$name.stl" || return 1
-  env -u DISPLAY -u WAYLAND_DISPLAY QT_QPA_PLATFORM=offscreen \
-    openscad --backend=Manifold -o "$outdir/$name.3mf" "$scad" || return 1
+  build_3mf "$scad" "$outdir/$name.3mf" || return 1
   echo "built $outdir/$name.stl and $outdir/$name.3mf"
+  # Per-part artifacts from project.toml [[parts]]. Hyphenated names match the
+  # flake's derivations, so local builds and release assets stay identical.
+  local parts_out
+  parts_out="$(project_parts "$name")" || return 1
+  local line fields saved=("${SCAD_DEFINES[@]}") rc=0
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    IFS=$'\t' read -r -a fields <<<"$line"
+    validate_tag "${fields[0]}"
+    SCAD_DEFINES=("${fields[@]:1}")
+    if build_stl "$scad" "$outdir/$name-${fields[0]}.stl" \
+       && build_3mf "$scad" "$outdir/$name-${fields[0]}.3mf"; then
+      echo "built $outdir/$name-${fields[0]}.stl and .3mf"
+    else
+      rc=1; break
+    fi
+  done <<<"$parts_out"
+  SCAD_DEFINES=("${saved[@]}")
+  return "$rc"
 }
 
 cmd_build() {
@@ -324,6 +388,94 @@ cmd_preview() {
   echo "$out"
 }
 
+cmd_validate() {
+  local target="${1:-}"
+  [ -n "$target" ] || die "usage: scad validate <name|--all>"
+  if [ "$target" = "--all" ]; then
+    local d name rc=0
+    for d in "$ROOT"/projects/*/; do
+      name="$(basename "$d")"
+      [ -f "$d$name.scad" ] || continue
+      python3 "$META_PY" "$d" --check || rc=1
+    done
+    return "$rc"
+  fi
+  validate_name "$target"
+  [ -d "$ROOT/projects/$target" ] || die "no such project '$target'"
+  python3 "$META_PY" "$ROOT/projects/$target" --check
+}
+
+# The four gallery views the site uses, rendered from the project source with
+# the current SCAD_DEFINES, plus the bbox overlay from the matching STL.
+site_views() {  # scad outdir base stl
+  local scad="$1" outdir="$2" base="$3" stl="$4" bbox v out
+  bbox="$(bbox_line "$stl")"
+  for v in iso front top right; do
+    out="$outdir/${base}_${v}.png"
+    render_png "$scad" "$out" "$(view_rot "$v")"
+    overlay_bbox "$out" "$bbox"
+    echo "$out"
+  done
+}
+
+# Everything site_gen.py consumes for one project: STL/3MF artifacts (default
+# body + each [[parts]] entry) and the four view PNGs per artifact.
+site_assets() {  # name
+  local name="$1" scad outdir
+  scad="$(project_scad "$name")" || return 1
+  outdir="$(project_outdir "$name")" || return 1
+  build_one "$name" || return 1
+  site_views "$scad" "$outdir" "$name" "$outdir/$name.stl" || return 1
+  local parts_out
+  parts_out="$(project_parts "$name")" || return 1
+  local line fields saved=("${SCAD_DEFINES[@]}") rc=0
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    IFS=$'\t' read -r -a fields <<<"$line"
+    SCAD_DEFINES=("${fields[@]:1}")
+    site_views "$scad" "$outdir" "$name-${fields[0]}" "$outdir/$name-${fields[0]}.stl" \
+      || { rc=1; break; }
+  done <<<"$parts_out"
+  SCAD_DEFINES=("${saved[@]}")
+  return "$rc"
+}
+
+cmd_site() {
+  local serve=0 skip_render=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --serve)       serve=1; shift ;;
+      --skip-render) skip_render=1; shift ;;
+      *)             die "site: unknown option '$1' (usage: scad site [--serve] [--skip-render])" ;;
+    esac
+  done
+  local d name
+  if [ "$skip_render" = 0 ]; then
+    for d in "$ROOT"/projects/*/; do
+      name="$(basename "$d")"
+      [ -f "$d$name.scad" ] || continue
+      site_assets "$name" || die "site: failed to build assets for '$name'"
+    done
+  fi
+  # owner/repo for download/source links; SCAD_REPO overrides (CI sets it).
+  local repo="${SCAD_REPO:-}" url
+  if [ -z "$repo" ] && command -v git >/dev/null; then
+    url="$(git -C "$ROOT" remote get-url origin 2>/dev/null || true)"
+    url="${url%.git}"
+    case "$url" in
+      git@github.com:*)     repo="${url#git@github.com:}" ;;
+      https://github.com/*) repo="${url#https://github.com/}" ;;
+    esac
+  fi
+  local gen_args=(--root "$ROOT" --out "$ROOT/_site")
+  [ -z "$repo" ] || gen_args+=(--repo "$repo")
+  python3 "$SCAD_LIB/site_gen.py" "${gen_args[@]}"
+  if [ "$serve" = 1 ]; then
+    echo "serving http://localhost:8000 (Ctrl-C to stop)"
+    python3 -m http.server -d "$ROOT/_site" 8000
+  fi
+}
+
 cmd_list() {
   local d name found=0
   for d in "$ROOT"/projects/*/; do
@@ -353,8 +505,14 @@ Usage:
       --tag <t>              suffix output files: <name>_<t>_<view>.png
   scad verify <name> [-D ...] [--tag t]
                              build STL and print the geometry report
-  scad build <name|--all>    export STL + 3MF to output/
+  scad build <name|--all>    export STL + 3MF to output/ (plus per-part
+                             <name>-<part>.* for project.toml [[parts]])
   scad preview <name>        (re)generate committed projects/<name>/preview.png
+  scad validate <name|--all> check project.toml against the metadata schema
+  scad site [--serve] [--skip-render]
+                             build the static gallery site into _site/
+                             (--serve: preview on :8000; --skip-render: reuse
+                             existing output/ renders and artifacts)
   scad list                  list projects
   scad help                  this help
 
@@ -372,6 +530,8 @@ main() {
     verify)         cmd_verify "$@" ;;
     build)          cmd_build "$@" ;;
     preview)        cmd_preview "$@" ;;
+    validate)       cmd_validate "$@" ;;
+    site)           cmd_site "$@" ;;
     list|ls)        cmd_list "$@" ;;
     help|-h|--help) cmd_help ;;
     *)              die "unknown command '$cmd' (try: scad help)" ;;

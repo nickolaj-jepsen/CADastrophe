@@ -1,0 +1,16 @@
+# Metadata for the gallery site and release pipeline. `scad validate demo-tray`.
+
+[project]
+title = "Demo tray"
+description = "Parametric rounded tray with a hollow cavity and four corner mounting holes — the starter example."
+status = "released"
+tags = ["starter", "tray", "bosl2"]
+
+[print]
+layer_height_mm = 0.2
+supports = false
+orientation = "open face up (as modelled); all overhangs ≤ 45°"
+
+[[bom]]
+name = "M4 screw (corner mounting, optional)"
+qty = 4

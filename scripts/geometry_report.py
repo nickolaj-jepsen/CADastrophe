@@ -9,10 +9,12 @@ Usage:
     geometry_report.py MESH.stl --json     # machine-readable JSON
     geometry_report.py MESH.stl --bbox      # one line: "X:40.0  Y:30.0  Z:20.0"
     geometry_report.py MESH.stl --center    # one line: "cx cy cz" (bbox centre)
+    geometry_report.py MESH.stl --check     # human report; exit 1 unless
+                                            # watertight AND winding-consistent
 
 Exit codes:
     0  success
-    1  file could not be loaded / no usable geometry
+    1  file could not be loaded / no usable geometry / --check failed
     2  bad CLI usage
 """
 import argparse
@@ -103,6 +105,8 @@ def main(argv=None):
     g.add_argument("--json", action="store_true", help="emit machine-readable JSON")
     g.add_argument("--bbox", action="store_true", help="emit one bbox line for overlays")
     g.add_argument("--center", action="store_true", help="emit bbox centre 'cx cy cz'")
+    g.add_argument("--check", action="store_true",
+                   help="print the report; exit 1 unless watertight and winding-consistent")
     args = p.parse_args(argv)
 
     try:
@@ -127,6 +131,9 @@ def main(argv=None):
         print(f"{c['x']:.4f} {c['y']:.4f} {c['z']:.4f}")
     else:
         print(human(args.path, report))
+        if args.check and not (report["is_watertight"] and report["is_winding_consistent"]):
+            print(f"check FAILED: {args.path} is not a printable manifold", file=sys.stderr)
+            return 1
     return 0
 
 

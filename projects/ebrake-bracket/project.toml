@@ -1,0 +1,33 @@
+# Metadata for the gallery site and release pipeline. `scad validate ebrake-bracket`.
+
+[project]
+title = "E-brake bracket"
+description = "Gusseted L-bracket mounting a USB hall-effect handbrake to a GT Omega PRIME Lite 8040 side rail."
+status = "released"
+tags = ["sim-racing", "bracket", "8040-profile", "handbrake"]
+
+[print]
+material = "PETG or ASA"
+layer_height_mm = 0.2
+infill = "40-50% (fit-check: 15% gyroid at 0.28 mm)"
+walls = 4
+supports = false
+orientation = "rail face on the bed — support-free, layers loaded in-plane"
+notes = "FDM holes shrink: add ~0.1 mm X-Y hole compensation if the M8 bolts bind. PETG creeps: ~3-4 N·m on the M8s, re-torque after a day."
+
+[[bom]]
+name = "M8 bolt + nut (handbrake → shelf)"
+qty = 4
+
+[[bom]]
+name = "M8×16 socket head + 8040 T-nut (leg → rail)"
+qty = 4
+spec = "ISO 4762; upper pair needs a long ball-end 6 mm key"
+
+[[links]]
+label = "ODDOR handbrake (the part this mounts)"
+url = "https://www.aliexpress.com/store/1103335664"
+
+[[links]]
+label = "As bought (\"Laroal 64 Bit\")"
+url = "https://www.amazon.de/-/en/dp/B0F17VZ6LT"

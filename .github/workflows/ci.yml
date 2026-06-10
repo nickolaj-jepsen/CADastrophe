@@ -1,0 +1,24 @@
+# PR / branch gate: every project must build and pass the geometry checks
+# (watertight + winding-consistent), and every project.toml must validate.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v27
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build all projects + geometry gate
+        run: nix flake check -L
+      - name: Validate project metadata
+        run: nix run . -- validate --all
