@@ -23,6 +23,8 @@ auto-discovers it and `nix build .#<name>` renders its STL).
 
 ## Conventions
 - **Millimetres**, always. Resolution via `$fa=2; $fs=0.5;` (prefer over a large `$fn`).
+- **No cosmetic text/debossing** on parts (version markers, labels, logos) — keep
+  surfaces clean. Functional geometry only.
 - `output/` is gitignored and regenerated. Commit only source and `projects/<name>/preview.png`.
 - Reproducible builds: `nix build .#<name>` (one STL) · `nix build` (whole gallery). Nix only
   discovers **git-tracked** projects — `git add` a new project before `nix build` will see it
