@@ -25,6 +25,12 @@ edit .scad  →  scad render <project>  →  scad verify <project>  →  fix  �
    - `scad render <p> --view front|top|right|left|back|bottom` → one named view.
    - `scad render <p> --section x|y|z` → a flat cross-section through the centre (read internal
      wall thickness). `scad render <p> --cutaway` → a corner removed to expose the interior.
+   - **Multi-part projects** (one .scad emitting several print bodies behind a `part`
+     customizer variable): render/verify each body in isolation with
+     `scad render <p> --tag bracket -D 'part="bracket"'` — `-D` (repeatable) passes
+     variable overrides to OpenSCAD, `--tag` suffixes the output files so per-part
+     artifacts don't overwrite the canonical ones. Same flags work on `scad verify`
+     (per-part watertight/bbox checks; the untagged default should be the full plate).
 2. **`scad verify <project>`** — prints a geometry report. **Read every number.** A part is
    not done until:
    - **Watertight/manifold = yes.** `NO` is a build failure — **fix it before anything else.**

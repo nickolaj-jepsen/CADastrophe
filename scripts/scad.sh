@@ -70,21 +70,41 @@ project_outdir() {  # name -> output dir (created)
   printf '%s\n' "$d"
 }
 
+# -D name=value overrides collected from the command line (render/verify),
+# passed to every openscad invocation as repeated `-D` flags. Lets a
+# multi-part project select one body, e.g.:
+#   scad render uniflag --tag bracket -D 'part="bracket"'
+SCAD_DEFINES=()
+
+# Output-filename tag (validated like project names) so per-variant artifacts
+# don't overwrite the canonical ones: output/<name>_<tag>_<view>.png etc.
+SCAD_TAG=""
+
+validate_tag() {
+  case "$1" in
+    "" | -* | *[!a-z0-9-]*) die "invalid --tag '$1' (lowercase letters, digits, hyphens only)" ;;
+  esac
+}
+
 # Headless binary-STL export (Manifold). Needs no GL/display.
 build_stl() {  # scad out
+  local defs=() d
+  for d in "${SCAD_DEFINES[@]}"; do defs+=(-D "$d"); done
   env -u DISPLAY -u WAYLAND_DISPLAY QT_QPA_PLATFORM=offscreen \
-    openscad --backend=Manifold --export-format=binstl -o "$2" "$1"
+    openscad --backend=Manifold --export-format=binstl "${defs[@]}" -o "$2" "$1"
 }
 
 # Headless PNG render of one view. rot = "rx,ry,rz".
 render_png() {  # scad out rot [extra openscad args...]
   local scad="$1" out="$2" rot="$3"; shift 3
+  local defs=() d
+  for d in "${SCAD_DEFINES[@]}"; do defs+=(-D "$d"); done
   env -u DISPLAY -u WAYLAND_DISPLAY QT_QPA_PLATFORM=offscreen \
     openscad --backend=Manifold --render \
       --camera="0,0,0,$rot,0" --viewall --autocenter \
       --projection=ortho --view=axes,scales \
       --colorscheme="$COLORSCHEME" --imgsize="$IMGSIZE" \
-      "$@" -o "$out" "$scad"
+      "${defs[@]}" "$@" -o "$out" "$scad"
 }
 
 bbox_line() { python3 "$REPORT_PY" "$1" --bbox; }
@@ -185,11 +205,16 @@ cmd_render() {
       --section=*) section="${1#*=}"; shift ;;
       --size)      [ $# -ge 2 ] || die "render: --size needs a value"; IMGSIZE="$2"; shift 2 ;;
       --size=*)    IMGSIZE="${1#*=}"; shift ;;
+      -D)          [ $# -ge 2 ] || die "render: -D needs name=value"; SCAD_DEFINES+=("$2"); shift 2 ;;
+      -D*)         SCAD_DEFINES+=("${1#-D}"); shift ;;
+      --tag)       [ $# -ge 2 ] || die "render: --tag needs a value"; SCAD_TAG="$2"; shift 2 ;;
+      --tag=*)     SCAD_TAG="${1#*=}"; shift ;;
       -*)          die "render: unknown option '$1'" ;;
       *)           [ -z "$name" ] || die "render: unexpected extra argument '$1'"; name="$1"; shift ;;
     esac
   done
-  [ -n "$name" ] || die "usage: scad render <name> [--view V] [--all] [--section x|y|z] [--cutaway] [--size WxH]"
+  [ -n "$name" ] || die "usage: scad render <name> [--view V] [--all] [--section x|y|z] [--cutaway] [--size WxH] [-D name=value]... [--tag t]"
+  [ -z "$SCAD_TAG" ] || validate_tag "$SCAD_TAG"
 
   # Validate everything cheap BEFORE the expensive build.
   IMGSIZE="${IMGSIZE//[xX]/,}"
@@ -201,15 +226,16 @@ cmd_render() {
     rot="$(view_rot "$view")" || die "render: unknown view '$view' (iso|front|top|right|left|back|bottom)"
   fi
 
-  local scad outdir stl bbox
+  local scad outdir stl bbox base
   scad="$(project_scad "$name")"
   outdir="$(project_outdir "$name")"
-  stl="$outdir/$name.stl"
+  base="${name}${SCAD_TAG:+_$SCAD_TAG}"
+  stl="$outdir/$base.stl"
   build_stl "$scad" "$stl"
   bbox="$(bbox_line "$stl")"
 
   if [ "$cutaway" = 1 ] || [ -n "$section" ]; then
-    render_cut "$name" "$scad" "$outdir" "$stl" "$bbox" "$section" "$cutaway"
+    render_cut "$base" "$scad" "$outdir" "$stl" "$bbox" "$section" "$cutaway"
     return
   fi
 
@@ -219,7 +245,7 @@ cmd_render() {
     for v in iso front top right; do
       render_png "$scad" "$tmp/$v.png" "$(view_rot "$v")"
     done
-    local grid="$outdir/${name}_views.png"
+    local grid="$outdir/${base}_views.png"
     montage -font "$FONT" -pointsize 16 -background white \
       -tile 2x2 -geometry +6+6 -border 1 -bordercolor '#888888' \
       -label 'ISO' "$tmp/iso.png" -label 'FRONT' "$tmp/front.png" \
@@ -230,19 +256,30 @@ cmd_render() {
     return
   fi
 
-  local out="$outdir/${name}_${view}.png"
+  local out="$outdir/${base}_${view}.png"
   render_png "$scad" "$out" "$rot"
   overlay_bbox "$out" "$bbox"
   echo "$out"
 }
 
 cmd_verify() {
-  local name="${1:-}"
-  [ -n "$name" ] || die "usage: scad verify <name>"
+  local name=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -D)      [ $# -ge 2 ] || die "verify: -D needs name=value"; SCAD_DEFINES+=("$2"); shift 2 ;;
+      -D*)     SCAD_DEFINES+=("${1#-D}"); shift ;;
+      --tag)   [ $# -ge 2 ] || die "verify: --tag needs a value"; SCAD_TAG="$2"; shift 2 ;;
+      --tag=*) SCAD_TAG="${1#*=}"; shift ;;
+      -*)      die "verify: unknown option '$1'" ;;
+      *)       [ -z "$name" ] || die "verify: unexpected extra argument '$1'"; name="$1"; shift ;;
+    esac
+  done
+  [ -n "$name" ] || die "usage: scad verify <name> [-D name=value]... [--tag t]"
+  [ -z "$SCAD_TAG" ] || validate_tag "$SCAD_TAG"
   local scad outdir stl
   scad="$(project_scad "$name")"
   outdir="$(project_outdir "$name")"
-  stl="$outdir/$name.stl"
+  stl="$outdir/${name}${SCAD_TAG:+_$SCAD_TAG}.stl"
   build_stl "$scad" "$stl"
   python3 "$REPORT_PY" "$stl"
 }
@@ -311,7 +348,11 @@ Usage:
       --section x|y|z        flat cross-section through the centre
       --cutaway              remove a corner octant to expose the interior
       --size WxH             image size (default 900x900)
-  scad verify <name>         build STL and print the geometry report
+      -D name=value          OpenSCAD variable override (repeatable); strings
+                             need quoted quotes: -D 'part="bracket"'
+      --tag <t>              suffix output files: <name>_<t>_<view>.png
+  scad verify <name> [-D ...] [--tag t]
+                             build STL and print the geometry report
   scad build <name|--all>    export STL + 3MF to output/
   scad preview <name>        (re)generate committed projects/<name>/preview.png
   scad list                  list projects
