@@ -3,27 +3,45 @@
 Mount a Pimoroni Cosmic Unicorn (32×32 RGB matrix, the owner's
 [uniflag firmware](https://github.com/nickolaj-jepsen/uniflag), SimHub over
 USB CDC) on the **outboard face of the right wheel-deck upright** of a GT Omega
-PRIME Lite, screen facing the driver. All units mm. Status: **design rev 1 —
+PRIME Lite, screen facing the driver. All units mm. Status: **design rev 2 —
 modelled and geometry-verified** (all three bodies watertight, single-shell,
 asserts green, strict board/plug collision test renders empty), **not yet
-printed**; the caliper checks below gate printing. Reference data:
-[docs/](docs/) (DXF-exact board geometry, cross-checked).
+printed**. Reference data: [docs/](docs/) (DXF-exact board geometry,
+cross-checked); all five photo-uncertain dimensions caliper-verified below.
 
-## As built (rev 1)
+## As built (rev 2 — printability rework, 2026-06-11)
 
-- Fasteners: 4× M8×14 (rail), **5× M5×30** (wall→frame: 3 on the ear line
-  outside the board's left edge + 2 into a back rib at board-y 120–140;
-  heads + washers on the wall's monitor side, nuts captive in frame pockets
-  with a ~10 mm bearing floor — an M5×14 here would leave a 1.5 mm floor
-  carrying the full preload, which is why the long bolts won), 6× M4×14
-  (ring sandwich, captive nuts in back-opening pockets so clamp force seats
-  them against solid material).
-- The board floats in a fixed 1.95 channel (`pcb 1.6 + chan_slack 0.35`) and
+Rev 1 verified geometrically but printed badly: its frame carried a back
+rib floating 8 mm over the open window (a 198 mm supported span) plus
+24 mm M5 boss columns, and its bracket needed a 100 mm wall + arm to reach
+them. Rev 2 replaces all of that with a **flat bolt flange**: the frame is
+a uniform 12 mm deep ring whose left band extends railward, and the wall's
+driver face bolts directly against the frame's back plane.
+
+- Fasteners: 4× M8×14 (rail), **4× M5×30** in a 2×2 grid through the flange
+  (columns 5.5/19.5 outside the board's left edge, rows at board-y 8/186
+  straddling the USB tunnel; socket heads sink into 5.5 mm front
+  counterbores — the 6.5 mm floor bears the preload in pure compression
+  against the wall face — washers + nuts on the wall's monitor side, 10.5 mm
+  thread proud), 6× M4×14 (ring sandwich, captive nuts in back-opening
+  pockets, unchanged).
+- Out-of-plane ("door-hinge") stiffness comes from the 14 mm column couple
+  plus the full flange-on-wall contact patch — rev 1's rib bolts are gone.
+  Static moment is ~0.3 Nm; the preloaded contact gaps at >7 Nm per bolt.
+- The board floats in a fixed 2.35 channel (`pcb 2.0 + chan_slack 0.35`) and
   never sees bolt preload.
-- Bracket: 80×210×8 rail plate, M8 rows at 25/185, wall leaning 15° (a
-  full-height strip + a rib arm), three weak-axis gussets stationed between
-  the washer rows, zip-tie slots under the USB drop.
-- Envelopes: bracket 104×210×100, frame 224×221×24, ring 224×221×5 — each
+- Bracket: 80×210×8 rail plate (corner r6 for warp relief), M8 rows at
+  25/185, wall leaning 15° — now only ~40 mm up the lean (top of part
+  ≈ 50 mm), three weak-axis gussets, zip-tie slots through the wall foot
+  below the flange edge.
+- **Print orientation is load-bearing for the frame:** it prints back-face
+  down, so the finger windows / USB tunnel are front-opening notches whose
+  3 mm continuous backing strip prints flat on the bed. (Front-face down,
+  that strip is an unsupported bridge — and cutting the notches full-depth
+  instead severs the band: the left and right windows overlap over board-y
+  43–73, which split the ring in two. Both were tried.)
+- No supports, no bridges, on any part.
+- Envelopes: bracket 90×210×50, frame 239×221×12, ring 221×221×5.35 — each
   fits the A1 bed (asserted).
 
 ## Decisions (owner interview, 2026-06-10)
@@ -43,7 +61,7 @@ printed**; the caliper checks below gate printing. Reference data:
 | Cable clips | Not wanted; bracket carries a strain-relief anchor near the port | owner manages cables |
 | Board fixing | **Perimeter picture-frame — zero M2 hardware.** Front ring laps ≤5 mm onto the front border; M4 + captive hex nuts clamp ring → board → rear frame | M2 annoying to source (owner); kills the rear-standoff risk; leaves the back open for the speaker |
 | Fitted extras | Bare board; metal legs come off; **speaker in use** → back stays open | owner |
-| Frame ↔ bracket joint | Bolt flange, M5 + captive hex nuts | owner has M4/M5 nuts |
+| Frame ↔ bracket joint | Bolt flange, M5 through-bolts + nuts (rev 2: counterbored heads, nuts behind the wall) | owner has M4/M5 nuts |
 | Repo layout | **One project, multi-body STL**: `uniflag.scad` lays the three parts out flat; slicer splits objects. `part = "plate"|"bracket"|"frame"|"ring"` customizer | no tooling changes; shared dims in one file |
 
 ## Owner's hardware bin
@@ -54,17 +72,18 @@ Design uses **M8×14** (rail), **M5** (flange), **M4** (frame sandwich) only.
 ## The three printed parts
 
 1. **Bracket** — plate on the upright (4× M8 clearance, 2×40 mm columns, rows
-   spread for pitch stiffness) + gusseted wing carrying the 15° yaw, ending in
-   an M5 bolt flange. Prints rail-face down (ebrake recipe: elephant-foot
-   chamfer, countersunk bore rims, teardropped horizontal bores).
-2. **Rear frame** — structural ring behind the board's perimeter (~218 sq
-   outline), M5 hex pockets mating the flange, M4 hex pockets for the sandwich,
-   strain-relief tab (zip-tie slots) below the USB cutout. Touches the board
+   spread for pitch stiffness) + a short gusseted wall carrying the 15° yaw;
+   the frame's flange bolts flat against its driver face. Prints rail-face
+   down (ebrake recipe: elephant-foot chamfer, countersunk bore rims,
+   teardropped horizontal bores), zip-tie slots through the foot.
+2. **Rear frame** — structural ring behind the board's perimeter (~213 sq
+   outline) whose left band extends railward into a flat 2×2 M5 bolt flange
+   (counterbored heads). M4 hex pockets for the sandwich. Touches the board
    only at the perimeter; rear lips segmented around the rear-edge keep-outs.
-   Prints flat on its back.
+   Uniform 12 deep; prints back-face down.
 3. **Front ring** — ≤5 mm lip over the board's ~6 mm dark border (LED packages
    start 7.25 mm in), clamps the board against the rear frame via M4s outside
-   the board outline. Prints flat.
+   the board outline. Prints flat, face down.
 
 ## Board interface geometry (DXF-exact unless noted; origin front bottom-left)
 
