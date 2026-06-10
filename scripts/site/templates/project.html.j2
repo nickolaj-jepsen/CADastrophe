@@ -1,0 +1,124 @@
+{% extends "base.html.j2" %}
+{% block title %}{{ project.title }} · {{ site_title }}{% endblock %}
+{% block head %}
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/" } }
+</script>
+{% endblock %}
+{% block content %}
+<article class="project">
+  <h1>{{ project.title }}{% if project.status == 'wip' %} <span class="badge wip">WIP</span>{% endif %}</h1>
+  <p class="description">{{ project.description }}</p>
+  {% if project.tags %}
+  <div class="tags">
+    {% for t in project.tags %}<span class="tag">{{ t }}</span>{% endfor %}
+  </div>
+  {% endif %}
+
+  {% for a in project.artifacts %}
+  <section class="artifact">
+    {% if project.artifacts | length > 1 %}<h2>{{ a.label }}</h2>{% endif %}
+
+    <div class="viewer" data-stl="{{ a.stl }}">
+      <noscript><p>Interactive 3D preview needs JavaScript.</p></noscript>
+    </div>
+    <p class="viewer-hint">drag to orbit · scroll to zoom · right-drag to pan</p>
+
+    <div class="downloads">
+      {% for d in a.downloads %}
+      <a class="button" href="{{ d.url }}" download>⬇ {{ d.label }} <span class="fname">{{ d.file }}</span></a>
+      {% endfor %}
+    </div>
+
+    {% if a.images %}
+    <div class="gallery">
+      {% for img in a.images %}
+      <a href="{{ img.src }}"><img src="{{ img.src }}" alt="{{ a.label }} — {{ img.view }}" loading="lazy"><span>{{ img.view }}</span></a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if a.stats %}
+    <table class="kv">
+      <tr><th>Bounding box</th><td>{{ a.stats.bbox }}</td></tr>
+      <tr><th>Volume</th><td>{{ a.stats.volume }}</td></tr>
+      <tr><th>Triangles</th><td>{{ a.stats.triangles }}</td></tr>
+      <tr><th>Watertight</th><td>{{ "✓ yes" if a.stats.watertight else "✗ NO" }}</td></tr>
+    </table>
+    {% endif %}
+  </section>
+  {% endfor %}
+
+  {% if project.print %}
+  <section>
+    <h2>Print settings</h2>
+    <table class="kv">
+      {% if project.print.material %}<tr><th>Material</th><td>{{ project.print.material }}</td></tr>{% endif %}
+      {% if project.print.layer_height_mm %}<tr><th>Layer height</th><td>{{ project.print.layer_height_mm }} mm</td></tr>{% endif %}
+      {% if project.print.infill %}<tr><th>Infill</th><td>{{ project.print.infill }}</td></tr>{% endif %}
+      {% if project.print.walls %}<tr><th>Walls</th><td>{{ project.print.walls }}</td></tr>{% endif %}
+      {% if project.print.supports is defined %}<tr><th>Supports</th><td>{{ "yes" if project.print.supports else "no" }}</td></tr>{% endif %}
+      {% if project.print.orientation %}<tr><th>Orientation</th><td>{{ project.print.orientation }}</td></tr>{% endif %}
+    </table>
+    {% if project.print.notes %}<p class="notes">{{ project.print.notes }}</p>{% endif %}
+  </section>
+  {% endif %}
+
+  {% if project.bom %}
+  <section>
+    <h2>Bill of materials</h2>
+    <table class="grid">
+      <thead><tr><th>Qty</th><th>Item</th><th>Spec</th></tr></thead>
+      <tbody>
+      {% for item in project.bom %}
+      <tr>
+        <td>{{ item.qty | default(1) }}×</td>
+        <td>{% if item.link %}<a href="{{ item.link }}">{{ item.name }}</a>{% else %}{{ item.name }}{% endif %}</td>
+        <td>{{ item.spec | default("") }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endif %}
+
+  {% if project.params %}
+  <section>
+    <h2>Parameters</h2>
+    <p class="notes">Edit these at the top of
+      {% if repo %}<a href="https://github.com/{{ repo }}/blob/main/projects/{{ project.name }}/{{ project.name }}.scad"><code>{{ project.name }}.scad</code></a>{% else %}<code>{{ project.name }}.scad</code>{% endif %}
+      and rebuild to customise the part.</p>
+    <table class="grid">
+      <thead><tr><th>Name</th><th>Default</th><th></th></tr></thead>
+      <tbody>
+      {% for prm in project.params %}
+      {% if prm.group and (loop.first or prm.group != loop.previtem.group) %}
+      <tr class="param-group"><td colspan="3">{{ prm.group }}</td></tr>
+      {% endif %}
+      <tr><td><code>{{ prm.name }}</code></td><td><code>{{ prm.value }}</code></td><td>{{ prm.comment }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endif %}
+
+  {% if project.readme_html %}
+  <section class="readme">
+    <h2>Notes</h2>
+    {{ project.readme_html | safe }}
+  </section>
+  {% endif %}
+
+  {% if project.links %}
+  <section>
+    <h2>Links</h2>
+    <ul>
+      {% for l in project.links %}<li><a href="{{ l.url }}">{{ l.label }}</a></li>{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+</article>
+<script type="module" src="../static/viewer.js"></script>
+{% endblock %}

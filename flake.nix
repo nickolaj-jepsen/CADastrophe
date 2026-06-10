@@ -16,9 +16,10 @@
         pkgs = nixpkgs.legacyPackages.${system};
         lib = pkgs.lib;
 
-        # Python with the geometry-report deps. scipy/networkx are REQUIRED for
-        # the disconnected-body count; trimesh alone cannot split meshes.
-        pythonEnv = pkgs.python3.withPackages (p: [ p.trimesh p.scipy p.networkx ]);
+        # Python with the geometry-report deps (scipy/networkx are REQUIRED for
+        # the disconnected-body count; trimesh alone cannot split meshes) plus
+        # the site generator's jinja2 templates and README markdown rendering.
+        pythonEnv = pkgs.python3.withPackages (p: [ p.trimesh p.scipy p.networkx p.jinja2 p.markdown ]);
 
         # Symlink farm so OpenSCAD's `include <BOSL2/std.scad>` resolves: it
         # needs OPENSCADPATH to point at a dir CONTAINING a folder named BOSL2.
@@ -47,10 +48,36 @@
         # only rebuilds when ITS files change (not when any repo file changes).
         projectSrc = name: ./projects + "/${name}";
 
-        # Per-project STL derivation. STL export needs only a writable HOME — no
-        # GL/display/xvfb (only PNG rendering needs a GL context, which the
-        # build sandbox lacks, so derivations are STL-only).
+        # Optional per-project metadata. [[parts]] entries add per-part
+        # artifacts; everything else (BOM, print settings, ...) is consumed by
+        # the site generator, not by the derivations.
+        projectMeta = name:
+          let f = ./projects + "/${name}/project.toml";
+          in if builtins.pathExists f then builtins.fromTOML (builtins.readFile f) else { };
+
+        # Per-project STL+3MF derivation (both exports are headless-safe — no
+        # GL/display/xvfb; only PNG rendering needs a GL context, which the
+        # build sandbox lacks, so the gallery SITE is built outside Nix by
+        # `scad site`). Each [[parts]] entry in project.toml additionally
+        # yields <name>-<part>.stl/.3mf built with that part's -D defines.
         mkProject = name:
+          let
+            parts = (projectMeta name).parts or [ ];
+            # Part names are interpolated into the build script and into
+            # release asset names — enforce the same charset as project names.
+            partName = p:
+              if builtins.match "[a-z0-9-]+" (p.name or "") != null then p.name
+              else throw "project ${name}: invalid [[parts]] name '${p.name or "<missing>"}'";
+            partDefines = p:
+              lib.concatMapStringsSep " " (d: "-D ${lib.escapeShellArg d}")
+                (p.defines or [ "part=\"${partName p}\"" ]);
+            exportCmds = file: defines: ''
+              openscad --backend=Manifold --export-format=binstl ${defines} \
+                -o "$out/${file}.stl" ${projectSrc name}/${name}.scad
+              openscad --backend=Manifold ${defines} \
+                -o "$out/${file}.3mf" ${projectSrc name}/${name}.scad
+            '';
+          in
           pkgs.runCommand "scad-${name}"
             {
               nativeBuildInputs = [ pkgs.openscad-unstable ];
@@ -58,8 +85,10 @@
             } ''
             export HOME="$TMPDIR"
             mkdir -p "$out"
-            openscad --backend=Manifold --export-format=binstl \
-              -o "$out/${name}.stl" ${projectSrc name}/${name}.scad
+            ${exportCmds name ""}
+            ${lib.concatMapStringsSep "\n"
+              (p: exportCmds "${name}-${partName p}" (partDefines p))
+              parts}
           '';
 
         # Auto-discover projects/<name>/ that contain <name>/<name>.scad. The
@@ -76,10 +105,12 @@
 
         projectPackages = lib.genAttrs projectNames mkProject;
 
+        # All artifacts in one directory — `nix build` output, and the staging
+        # area CI uploads to the rolling "latest" GitHub release.
         gallery = pkgs.runCommand "cadastrophe-gallery" { } ''
           mkdir -p "$out"
           ${lib.concatMapStringsSep "\n"
-            (n: ''cp ${projectPackages.${n}}/${n}.stl "$out/${n}.stl"'')
+            (n: ''cp ${projectPackages.${n}}/*.stl ${projectPackages.${n}}/*.3mf "$out/"'')
             projectNames}
         '';
       in
@@ -88,6 +119,19 @@
           default = gallery;
           inherit gallery scad;
         };
+
+        # `nix flake check` = geometry gate: every project's STLs must be
+        # watertight and winding-consistent. The checks reuse the package
+        # derivations, so the expensive Manifold export happens once.
+        checks = lib.mapAttrs'
+          (name: drv: lib.nameValuePair "geometry-${name}"
+            (pkgs.runCommand "check-${name}" { nativeBuildInputs = [ pythonEnv ]; } ''
+              for f in ${drv}/*.stl; do
+                python3 ${./scripts/geometry_report.py} "$f" --check
+              done
+              touch "$out"
+            ''))
+          projectPackages;
 
         apps.default = {
           type = "app";
@@ -102,7 +146,7 @@
           OPENSCADPATH = openscadLibs;
           shellHook = ''
             echo "CADastrophe dev shell — OpenSCAD $(openscad --version 2>&1 | head -1)"
-            echo "Tools: scad {new,render,verify,build,preview,list}  ·  openscad  ·  BOSL2 on OPENSCADPATH"
+            echo "Tools: scad {new,render,verify,build,preview,validate,site,list}  ·  openscad  ·  BOSL2 on OPENSCADPATH"
           '';
         };
       });

@@ -1,0 +1,20 @@
+{% extends "base.html.j2" %}
+{% block content %}
+<p class="tagline">Parametric OpenSCAD projects — rendered, verified, and built reproducibly from source.</p>
+<div class="cards">
+  {% for p in projects %}
+  <a class="card" href="{{ rel }}{{ p.name }}/index.html">
+    {% if p.thumb %}<img src="{{ rel }}{{ p.name }}/{{ p.thumb }}" alt="{{ p.title }}" loading="lazy">{% endif %}
+    <div class="card-body">
+      <h2>{{ p.title }}{% if p.status == 'wip' %} <span class="badge wip">WIP</span>{% endif %}</h2>
+      <p>{{ p.description }}</p>
+      {% if p.tags %}
+      <div class="tags">
+        {% for t in p.tags %}<span class="tag">{{ t }}</span>{% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}
