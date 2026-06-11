@@ -47,6 +47,7 @@ GPIOs from [cosmic_unicorn.hpp](https://github.com/pimoroni/pimoroni-pico/blob/m
 Examples confirm labels: "adjust the brightness with LUX + and -", VOL +/- for volume ([examples README](https://github.com/pimoroni/unicorn/blob/main/examples/cosmic_unicorn/README.md)).
 
 **Mount implication: do not enclose the left or right PCB edges — all 9 buttons actuate from those edges.**
+*(Superseded 2026-06-11, owner caliper: plungers are flush rear-mounted — a locating skirt at the edge is fine; keep fingertip reach-in windows. See verified-dimensions.md.)*
 
 ## 3. Onboard peripherals
 
@@ -97,11 +98,11 @@ Also in pimoroni-pico: C++ library at `libraries/cosmic_unicorn/` ([README](http
 ## Open questions (need physical measurement or user input)
 
 - Exact rear component stack height above the PCB (speaker puck, Pico module, JST connectors) for standoff length — official depth is 10.2 mm overall with no breakdown; physically measure the speaker height before fixing standoff length (estimate 6-7 mm, suggest >= 8 mm standoffs)
-- PCB thickness (assumed 1.6 mm, not published)
-- How far the edge-button caps protrude beyond the PCB edge (looks ~1 mm in photos) — affects any side-rail or bezel clearance
-- Exact recess of the micro-USB connector relative to the left board edge and minimum plug clearance — measure with the intended cable
+- PCB thickness (assumed 1.6 mm, not published) — **answered 2026-06-11** (owner caliper): border stack ~2.0 mm
+- How far the edge-button caps protrude beyond the PCB edge (looks ~1 mm in photos) — **answered 2026-06-11**: rear-mounted, flush plungers, nothing protrudes
+- Exact recess of the micro-USB connector relative to the left board edge and minimum plug clearance — **answered 2026-06-11**: centre 17 mm above the bottom edge, boot 30 mm past the edge (owner's cable)
 - Which revision the user owns (original Pico W vs Pico 2 W, Dec-2024 onward) — mechanically identical per the shared CAD files on the product page, but worth confirming since firmware builds differ
-- Exact location of the front-face phototransistor (light sensor) so the mount/bezel does not shade it — small orange parts visible in the drawing but not labelled
+- Exact location of the front-face phototransistor (light sensor) so the mount/bezel does not shade it — **answered 2026-06-11** (owner caliper, second pass): front-view LEFT edge, x ≈ 4 / y ≈ 116; see verified-dimensions.md
 - Board weight (not published anywhere found)
 - Whether the M2 mounting holes are plated/grounded (affects use of metal screws against an aluminium rig)
 

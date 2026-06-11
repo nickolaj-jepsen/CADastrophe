@@ -3,13 +3,36 @@
 Mount a Pimoroni Cosmic Unicorn (32×32 RGB matrix, the owner's
 [uniflag firmware](https://github.com/nickolaj-jepsen/uniflag), SimHub over
 USB CDC) on the **outboard face of the right wheel-deck upright** of a GT Omega
-PRIME Lite, screen facing the driver. All units mm. Status: **design rev 2 —
+PRIME Lite, screen facing the driver. All units mm. Status: **design rev 3 —
 modelled and geometry-verified** (all three bodies watertight, single-shell,
 asserts green, strict board/plug collision test renders empty), **not yet
 printed**. Reference data: [docs/](docs/) (DXF-exact board geometry,
 cross-checked); all five photo-uncertain dimensions caliper-verified below.
 
-## As built (rev 2 — printability rework, 2026-06-11)
+## Rev 3 (2026-06-11) — chirality fix + fit corrections
+
+- **Mirror bug**: rev 2's model space (front-view x/y, +z toward the rig) was
+  left-handed — every part rendered mirrored. Model space is now +z toward
+  the driver and the bracket wall sits at the seat-side plate end; each part
+  verified as the exact mirror of its rev-2 counterpart (equal volumes,
+  boolean-XOR residue ≤ 1e-5 %) **before** the fit corrections below.
+- Caliper second pass: **USB centre 17** (was 23 — mis-measured): window
+  y 11–23, M5 row 1 → board-y 30, just **above** the tunnel (below it the
+  counterbore reaches the bottom-left ear's nut pocket — now asserted).
+  **Light sensor on the front-view LEFT edge** (x ≈ 4, y ≈ 116): the rev-2
+  "right edge" record was read in the mirrored convention.
+- Ring: full four-edge lip, sensor window y 108–124 in the left lip; button
+  notches deleted (plungers actuate behind the board — the frame reach-ins
+  cover them); **USB cut skirt-deep only** (the boot tops out at the board's
+  front face, tested) so the face ring runs unbroken.
+- M4 sandwich: **5 bolts** — the mid-bottom ear sat on the Qw/ST cluster and
+  its keep-out breached the bore; rear-lip keep-outs now stop at the board
+  clearance line, keeping ≥1.1 mm walls on the bottom corner bores.
+- Bracket wall spans only the plate's straight edge (pl_r short per end) —
+  its ends meet the plate edge at the corner-arc tangents; no overhang past
+  the rounding, all joints planar.
+
+## Rev 2 (superseded — printability rework, 2026-06-11)
 
 Rev 1 verified geometrically but printed badly: its frame carried a back
 rib floating 8 mm over the open window (a 198 mm supported span) plus
@@ -89,22 +112,22 @@ Design uses **M8×14** (rail), **M5** (flange), **M4** (frame sandwich) only.
 
 - Outline **204.00 × 204.00**, corner r3, max depth 10.2 (at the JST connector).
 - Edge cutouts the frame must provide:
-  - left wall: **USB window** y ≈ 11–23 (port shell y 13.5–20.5, photo-derived —
-    *measure*), **A/B/C/D button window** y ≈ 40–86 (buttons at 44.6/56.8/68.8/80.8 ±1)
+  - left wall: **USB window** y ≈ 11–23 (port centre 17, caliper-confirmed
+    2026-06-11 second pass), **A/B/C/D button window** y ≈ 40–86 (buttons at 44.6/56.8/68.8/80.8 ±1)
   - right wall: **button window** y ≈ 6–72 (Lux−/Lux+/Zzz/Vol−/Vol+ at 9.2/21.1/~37/57.4/69.3 ±1)
-  - buttons protrude ~1–2 past the outline (*estimate — measure*)
+  - buttons rear-mounted with **flush** plungers — nothing protrudes (caliper 2026-06-11)
 - Rear-lip keep-outs (rear face, near edges): Pico x ≈ 1–53 / y ≈ 4–30
   (left-bottom), Qw/ST + RESET bottom-centre (x ≈ 75–107, y ≲ 25), JST at
   ~(119, 18). Top edge and right edge y > 72 are clean (±3, photo-derived).
 - Top hanging slot x 94–110 — treat as keep-out, don't rely on it.
 - Front lip: stay out of the speaker grille (x 134–152, y 30–42 — interior, a
-  ≤5 lip never reaches it) and the **light sensor**: front face, right-hand
-  edge, x ≈ 198–202 (two independent reviews + border geometry), **y unknown**
-  (no image source could be measured) → the ring runs **no continuous lip on
-  the right edge — corner tabs only**, so the sensor stays exposed at any y.
-- Edge buttons protrude ~1.5 nominal (side-actuated SMD tactile class, not
-  published) → side walls keep ≥2.5 inner offset from the PCB edge along
-  button rows.
+  ≤5 lip never reaches it) and the **light sensor**: front face, **left-hand
+  edge, x ≈ 4, y ≈ 116** (caliper; the earlier "right edge x ≈ 198–202" reads
+  were taken in the rev-2 mirrored convention — 204 − 200 = 4) → the ring runs
+  a full four-edge lip with a **sensor window at y 108–124 in the left lip**.
+- Edge buttons (caliper 2026-06-11): rear-mounted, **flush** plungers, bodies
+  ~5 in from the edge on the back — nothing protrudes, so the locating skirt
+  may run at `bd_clr` along the button rows.
 
 ## Loads
 
@@ -119,17 +142,17 @@ Visual guide: [docs/must-measure.svg](docs/must-measure.svg).
 
 | # | Measured | Model consequence |
 |---|---|---|
-| 1a | USB port centre **23** above the bottom edge (photos said ~17!) | `usb_cy=23`, window `usb_y=[17,29]`; M5 ear #1 moved to y 36 with 1.0 clearances (asserted) |
+| 1a | USB port centre **23** above the bottom edge (photos said ~17!) — **mis-measured; corrected to 17 on the second pass** (the photos were right) | `usb_cy=17`, window `usb_y=[11,23]`, M5 row 1 at board-y 30 (above the tunnel) |
 | 1b | Plug boot **30** past the edge | `plug_len=30`, `gap` 40 → **42** to keep rail clearance |
 | 2 | Border stack **~2.0** (not bare 1.6 PCB) | `pcb_t=2.0` → channel 2.35; ring now 5.35 thick; M4 stack re-checked by asserts |
-| 3 | Buttons rear-mounted, **flush** plungers, bodies ~5 in from the edge | nothing protrudes → windows are fingertip reach-ins: `btn_nd` 6 → 8, left window [43,84]; rear keep-outs already covered the bodies |
+| 3 | Buttons rear-mounted, **flush** plungers, bodies ~5 in from the edge | nothing protrudes → windows are fingertip reach-ins: `btn_nd` 6 → 9, left window [43,84]; rear keep-outs already covered the bodies |
 | 4 | Rear component boxes confirmed roughly right | keep-outs unchanged |
-| 5 | Light sensor at **y ≈ 116** on the right edge (x ≈ 200) | inside the fully-open right edge — no change; recorded for any future right-lip revision |
+| 5 | Light sensor at **y ≈ 116** on the right edge (x ≈ 200) — **edge corrected on the second pass: front-view LEFT, x ≈ 4** (the first read used the rev-2 mirrored convention) | four-edge lip with a sensor window y 108–124 in the left lip |
 
 All three bodies re-verified watertight/single-shell and the strict collision
-test (board + measured 30 mm boot ghost reaching 2.5 behind the board plane)
-renders empty. The USB cut now goes through the full ring depth — the boot
-crosses the board plane, so the rim is C-shaped there (still one body).
+test (board + measured 30 mm boot ghost) renders empty. Rev 3: the boot tops
+out at the board's front face (tested), so the ring's USB cut is skirt-deep
+only and the face ring runs unbroken — no C-shaped rim.
 
 ## Superseded: original must-measure list
 

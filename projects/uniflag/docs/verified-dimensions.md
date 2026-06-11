@@ -205,3 +205,13 @@ These supersede every photo-derived estimate above:
 - **Rear component map: confirmed** roughly as drawn (±3 mm boxes hold).
 - **Light sensor: y ≈ 116 mm** above the bottom edge, on the right-edge
   front border (x ≈ 200) — the previously unknown coordinate.
+
+### Second pass (2026-06-11, after the rev-3 chirality fix) — two corrections
+
+- **USB port centre: 17 mm** above the bottom edge, not 23 — the first pass
+  mis-measured; the photo estimate (~17, shell y 13.5–20.5) was right after
+  all. Window moved to y 11–23.
+- **Light sensor: front-view LEFT edge (x ≈ 4), y ≈ 116** — same side as the
+  USB/Pico. The first pass's "right edge (x ≈ 200)" was read against the
+  rev-2 model, which was mirrored left-right (see the uniflag.scad header);
+  204 − 200 = 4. The y value stands.
