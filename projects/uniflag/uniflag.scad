@@ -242,6 +242,22 @@ module edge_notch(side, y0, y1, z0, depth) {  // side: -1 left, +1 right
         cube([(side < 0 ? fl_edge : out_half) + lap - 90, y1 - y0, depth]);
 }
 
+// First-layer squish relief: a 45-deg staircase rim cut on the bed face of
+// the 2D outline passed as children. A straight rebate leaves a foot_ch
+// ledge overhanging after the first layers; OpenSCAD can't taper-extrude an
+// arbitrary outline, but three one-layer steps slice exactly like a 45-deg
+// chamfer at 0.2 mm layers.
+module foot_relief() {
+    steps = 3;
+    for (i = [0:steps - 1])
+        translate([0, 0, -eps + i * foot_ch / steps])
+            linear_extrude(foot_ch / steps + 2 * eps)
+                difference() {
+                    offset(delta = lap) children();
+                    offset(delta = -foot_ch * (steps - i) / steps) children();
+                }
+}
+
 // Hex-nut pocket: nut void + an insertion slot swept toward `dir` (2D dir).
 module nut_pocket(w, t, z0, dir, slot_l) {
     translate([0, 0, z0])
@@ -288,13 +304,8 @@ module frame() {
                          h = foot_ch + eps);
         }
 
-        // bed-face squish relief: chamfer the outer rim of the BACK face
-        tag("remove") translate([0, 0, fr_d - foot_ch])
-            linear_extrude(foot_ch + eps)
-                difference() {
-                    offset(delta = lap) frame_base2d();
-                    offset(delta = -foot_ch) frame_base2d();
-                }
+        // bed-face squish relief on the outer rim of the BACK face
+        tag("remove") translate([0, 0, fr_d]) zflip() foot_relief() frame_base2d();
     }
 }
 
@@ -337,12 +348,7 @@ module ring() {
         for (p = m4_pts) tag("remove") translate(p)
             translate([0, 0, -lap]) cylinder(d = m4_hole, h = ring_t + chan_t + 2 * lap);
         // bed-face squish relief on the visible front rim
-        tag("remove") translate([0, 0, -eps])
-            linear_extrude(foot_ch + eps)
-                difference() {
-                    offset(delta = lap) outline2d();
-                    offset(delta = -foot_ch) outline2d();
-                }
+        tag("remove") foot_relief() outline2d();
     }
 }
 
@@ -406,13 +412,8 @@ module bracket() {
             translate([sx * m8_x, y - pl_h / 2, -eps])
                 cylinder(d1 = m8_hole + 2 * (foot_ch + eps), d2 = m8_hole,
                          h = foot_ch + eps);
-        // elephant-foot chamfer around the plate's bed face
-        tag("remove") translate([0, 0, -eps])
-            linear_extrude(foot_ch + eps)
-                difference() {
-                    rect([pl_w + 2 * lap, pl_h + 2 * lap]);
-                    rect([pl_w - 2 * foot_ch, pl_h - 2 * foot_ch], rounding = pl_r);
-                }
+        // elephant-foot relief around the plate's bed face
+        tag("remove") foot_relief() rect([pl_w, pl_h], rounding = pl_r);
     }
 }
 
