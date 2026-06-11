@@ -16,6 +16,15 @@ cross-checked); all five photo-uncertain dimensions caliper-verified below.
   the driver and the bracket wall sits at the seat-side plate end; each part
   verified as the exact mirror of its rev-2 counterpart (equal volumes,
   boolean-XOR residue ≤ 1e-5 %) **before** the fit corrections below.
+- **Yaw raised 15° → 25°** (`yaw=25`): the panel now aims more squarely at the
+  seat. The wall is still self-supporting at this lean; the wall foot's outer
+  corner and the gusset toes now sink below the bed, so `bracket()` clips the
+  leaned wall back to the bed plane (z=0). Bracket envelope grows to
+  99×210×51.
+- **First-layer relief reworked**: the elephant-foot rebate left an overhanging
+  ledge, so it is now a three-step 45° staircase on every bed-face perimeter
+  (`foot_relief`), plus a squish countersink on the frame's rear M5 rims so the
+  wall-contact face seats flat.
 - Caliper second pass: **USB centre 17** (was 23 — mis-measured): window
   y 11–23, M5 row 1 → board-y 30, just **above** the tunnel (below it the
   counterbore reaches the bottom-left ear's nut pocket — now asserted).
@@ -74,11 +83,11 @@ driver face bolts directly against the frame's back plane.
 | Upright orientation | 80 mm fore-aft → outboard face is 80 mm wide, two vertical T-slots at 20/60 | owner confirmed; matches ebrake-verified slot geometry |
 | Bracket face | Outboard face, gusseted L-bracket | two slot columns → 4-bolt pattern beats the rear face's single slot |
 | Rail fasteners | 4× M8×14 + slide-in T-nuts, 2 columns × 40 mm, row spread free | owner's bin; same interface the ebrake bracket verified |
-| Panel aim | Fixed **15° yaw toward the seat**; yaw + pitch exposed as parameters | owner prefers the panel "looking at" the seat; re-print to tune |
+| Panel aim | **25° yaw toward the seat** (started at 15°, tuned up at rev 3); exposed as a parameter | owner prefers the panel "looking at" the seat; re-print to tune |
 | Vertical position | Panel top ≈ wheel-deck beam underside; **slides freely** (vertical slots) | height is a fit-time knob, not committed geometry |
 | Junction clearance | None needed — outboard face is clean below the beam | owner checked |
 | Data/power | One permanent USB cable from the PC (SimHub → USB CDC) | owner's setup; firmware repo confirms |
-| USB exit | Board as-shipped: **micro-B through the left edge toward the upright**, straight plug, **gap ≈ 40 mm** | off-the-shelf cable; plug + bend fit the gap; cable drops straight down the slot region |
+| USB exit | Board as-shipped: **micro-B through the left edge toward the upright**, straight plug, **gap = 42 mm** | off-the-shelf cable; measured 30 mm boot + bend room; cable drops straight down the slot region |
 | Removability | Permanent — plain bolted joints everywhere | owner: lives on the rig |
 | Vibration | Direct drive ≤10 Nm: generous gussets, ≥4 walls, short cantilever | owner's base |
 | Cable clips | Not wanted; bracket carries a strain-relief anchor near the port | owner manages cables |
@@ -95,7 +104,7 @@ Design uses **M8×14** (rail), **M5** (flange), **M4** (frame sandwich) only.
 ## The three printed parts
 
 1. **Bracket** — plate on the upright (4× M8 clearance, 2×40 mm columns, rows
-   spread for pitch stiffness) + a short gusseted wall carrying the 15° yaw;
+   spread for pitch stiffness) + a short gusseted wall carrying the 25° yaw;
    the frame's flange bolts flat against its driver face. Prints rail-face
    down (ebrake recipe: elephant-foot chamfer, countersunk bore rims,
    teardropped horizontal bores), zip-tie slots through the foot.
@@ -138,7 +147,7 @@ same way the ebrake's do (its audited loads were ~40× higher).
 
 ## Caliper results (owner, 2026-06-11) — all five measured, model updated
 
-Visual guide: [docs/must-measure.svg](docs/must-measure.svg).
+Full provenance in [docs/verified-dimensions.md](docs/verified-dimensions.md).
 
 | # | Measured | Model consequence |
 |---|---|---|
@@ -153,15 +162,3 @@ All three bodies re-verified watertight/single-shell and the strict collision
 test (board + measured 30 mm boot ghost) renders empty. Rev 3: the boot tops
 out at the board's front face (tested), so the ring's USB cut is skirt-deep
 only and the face ring runs unbroken — no C-shaped rim.
-
-## Superseded: original must-measure list
-
-1. USB port: shell centre height above the bottom edge + plug-boot protrusion
-   past the board edge (sizes the left-wall window and the 40 mm gap check).
-2. Board edge thickness where the frame channel grips (PCB + front LED panel
-   stack — the sandwich channel height; nominal 1.6 PCB + ~2.6 LED).
-3. Edge-button protrusion (side-wall offset).
-4. Rear-edge component positions vs the segmented rear lips (±3 photo-derived).
-5. Light sensor y-position on the right front border (x ≈ 198–202 confirmed;
-   the corner-tab ring design tolerates any y, so this only matters if the
-   right-edge tabs are ever widened).

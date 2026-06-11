@@ -59,7 +59,7 @@ Examples confirm labels: "adjust the brightness with LUX + and -", VOL +/- for v
 | Battery connector | JST-PH 2-pin, silkscreened "BATTERY 5.5V MAX", back, bottom-centre-left; no charging hardware onboard | back photo; product page |
 | Qw/ST | 2x JST-SH 4-pin (Qwiic/STEMMA QT), I2C on GP4/GP5, side by side on the back at the bottom edge ("1 QW/ST 2") | module README; back photo |
 | Mute | No physical switch — GP22 drives the MAX98357A mute/enable in software | cosmic_unicorn.hpp; schematic |
-| USB | Micro-B on the back-mounted Pico; **side-entry at the front-view LEFT edge, centred ~20 mm above the bottom edge** (Pico body spans roughly y 9-30 there). Plug enters parallel to the board plane | back product photos (measured from pixels) |
+| USB | Micro-B on the back-mounted Pico; **side-entry at the front-view LEFT edge, centred 17 mm above the bottom edge** (caliper 2026-06-11; boot 30 mm past the edge). Plug enters parallel to the board plane | owner caliper + back photos |
 
 ## 4. Physical dimensions & mounting (the load-bearing section)
 

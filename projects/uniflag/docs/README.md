@@ -3,40 +3,37 @@
 Reference material for mounting a Pimoroni Cosmic Unicorn (32×32 RGB LED
 matrix, used as a sim-racing "virtual flag") on the right wheel-deck upright of
 a GT Omega PRIME Lite (8040 profile). Compiled 2026-06-10 from the official
-Pimoroni repos, product pages, and the official DXF/dimensional drawing; every
-dimension claim was cross-checked by an independent pass
-(see [verified-dimensions.md](verified-dimensions.md)).
+Pimoroni repos, product pages, and the official DXF/dimensional drawing, then
+reconciled against the owner's caliper passes (2026-06-11) once the board was
+in hand. The board interface that the model actually cuts to lives in
+[../SPEC.md](../SPEC.md); these are the upstream facts it was derived from.
 
 ## Contents
 
-- [must-measure.svg](must-measure.svg) — **the pre-print checklist as a
-  picture**: the five caliper measurements drawn on the board, with the
-  model parameter each one feeds.
-- [verified-dimensions.md](verified-dimensions.md) — every dimension with a
-  confirmed/conflicting/single-source verdict, plus the must-measure list
-  in prose.
-- [mechanical.md](mechanical.md) — mounting holes, board outline, rear
-  component map, edge buttons. The load-bearing doc for the mount design.
-- [hardware-reference.md](hardware-reference.md) — board overview from the
-  official repos: GPIO map, buttons, peripherals, CAD links.
-- [product-spec.md](product-spec.md) — official product spec: features,
-  connectors, power, what ships in the box.
-- [sim-racing-usage.md](sim-racing-usage.md) — SimHub integration, power in
-  practice, prior-art mounts, reported gotchas.
-- [rig-interface.md](rig-interface.md) — the GT Omega side: profile, slots,
-  placement, and the design decisions from the owner interview.
+- [verified-dimensions.md](verified-dimensions.md) — every board dimension with
+  a confirmed/conflicting/single-source verdict and provenance, capped by the
+  two owner caliper passes that supersede the photo estimates. The record of
+  truth for why each number is what it is.
+- [hardware-reference.md](hardware-reference.md) — the board reference:
+  outline, mounting holes, rear component map, edge buttons, peripherals, GPIO,
+  and the official CAD/DXF links.
+- [rig-interface.md](rig-interface.md) — the GT Omega side: 8040 profile,
+  T-slots, panel placement, and the owner-interview decisions.
 
 Firmware: the panel runs the owner's own
 [uniflag](https://github.com/nickolaj-jepsen/uniflag) firmware (Rust +
-embassy-rs), fed by SimHub over USB CDC — see the firmware section in
-[sim-racing-usage.md](sim-racing-usage.md).
+embassy-rs), fed by SimHub over USB CDC — a permanent data+power cable, which is
+why the bracket carries a strain-relief anchor.
 
-## The five numbers that matter most
+## The numbers the model cuts to
 
-| Fact | Value | Confidence |
+| Fact | Value | Source |
 |---|---|---|
 | Board envelope | 204 × 204 × 10.2 mm (depth is max, at the JST battery connector) | official, DXF-exact |
-| Mounting holes | 7× M2 (⌀2.1), 3 mm in from edges, 99 mm pitch — corners (3,3)(201,3)(3,201)(201,201) + mid-left/right/bottom; plain holes, **not threaded** | official, DXF-exact |
-| USB port | **micro-B** (on the rear Pico), side-entry through the front-view **left** edge, centre ~17 mm above the bottom edge | official type; photo-derived position — measure |
-| Edge buttons | left edge A/B/C/D y≈45–81; right edge Vol/Zzz/Lux y≈9–69 — both side edges must stay actuator-accessible | drawing-derived ±1 mm |
-| Rear clearance | ~6 mm component stack (derived); standoffs ≥8 mm advised — **the highest-risk number, measure it** | derived, unverified |
+| Border stack thickness | ~2.0 mm (not the bare 1.6 PCB) | owner caliper 2026-06-11 |
+| USB port | micro-B, front-view **left** edge, centre 17 mm above the bottom; boot 30 mm past the edge | owner caliper 2026-06-11 |
+| Edge buttons | rear-mounted, **flush** plungers — nothing protrudes; left A/B/C/D, right Vol/Zzz/Lux | owner caliper 2026-06-11 |
+| Light sensor | front face, **left** edge, x ≈ 4, y ≈ 116 | owner caliper 2026-06-11 |
+| Mounting holes | 7× M2 (⌀2.1), 3 mm in, 99 mm pitch — **unused** (this mount grips the perimeter, no M2 hardware) | official, DXF-exact |
+</content>
+</invoke>

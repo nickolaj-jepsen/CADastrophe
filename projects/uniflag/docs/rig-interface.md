@@ -27,10 +27,12 @@ answers in the design interview (2026-06-10).
 
 - Panel fully **outboard of the upright**, screen facing the driver.
 - Small gap between the upright and the panel's left edge (sketch scale
-  ~20–40 mm; final value driven by USB plug + button access, see interview).
+  ~20–40 mm; **final `gap` = 42 mm**, driven by the measured 30 mm USB boot +
+  bend room).
 - Panel **top edge ≈ underside of the wheel-deck beam** (just below wheel-hub
   height).
-- **Fixed ~15° yaw toward the seat** (exposed as a parameter, default 15).
+- **Fixed 25° yaw toward the seat** (exposed as a parameter, default `yaw=25`;
+  was 15 through rev 2).
 
 ## Environment / decisions from the interview
 
