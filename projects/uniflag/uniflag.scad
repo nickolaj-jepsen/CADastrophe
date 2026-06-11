@@ -373,7 +373,8 @@ module wall_unrot() {
     // Weak-axis gussets on the monitor side, stationed between the M8
     // washer rows and clear of the hex-key paths. They lean with the wall;
     // the base sits at local z=-4 so the rotation can't lift the toe off
-    // the plate (the lean raises points left of the pivot).
+    // the plate (the lean raises points left of the pivot, and sinks
+    // points near it — bracket() clips everything back to the bed plane).
     for (y = [pl_h / 2, pl_h / 2 - 55, pl_h / 2 + 55])
         translate([0, y + 3, 0])
             rotate([90, 0, 0])
@@ -389,8 +390,12 @@ module bracket() {
             cuboid([pl_w, pl_h, pl_t], rounding = pl_r, edges = "Z",
                    anchor = BOTTOM, orient = UP)
                 ;
-            translate([0, -pl_h / 2, 0])
+            // clip at the bed plane: the lean sinks the gusset bases and
+            // the wall foot's inner corner below z=0
+            translate([0, -pl_h / 2, 0]) intersection() {
                 yrot(yaw, cp = pivot) wall_unrot();
+                translate([-200, -10, 0]) cube([400, pl_h + 20, 250]);
+            }
         }
         // M8 clearance bores, vertical in print — no teardrop needed
         for (sx = [-1, 1], y = m8_y) tag("remove")
