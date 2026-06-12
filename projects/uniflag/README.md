@@ -39,5 +39,3 @@ open-frame — ASA will warp at this footprint), 0.2 mm layers, ≥4 walls,
 floors, zip-slot ceilings). Use a 5 mm brim on the frame
 and ring and a textured PEI sheet against corner lift; the bracket plate's
 big rounded corners + elephant-foot chamfer are the warp relief.
-
-![preview](preview.png)

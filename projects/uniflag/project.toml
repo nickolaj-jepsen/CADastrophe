@@ -1,0 +1,60 @@
+# Metadata for the gallery site and release pipeline. `scad validate uniflag`.
+
+[project]
+title = "uniflag — Cosmic Unicorn mount"
+description = "Three-body mount for a Pimoroni Cosmic Unicorn (32×32 LED matrix running the uniflag SimHub flag) on the outboard upright of a GT Omega PRIME Lite 8040 rig — screen yawed 25° toward the seat"
+status = "wip"
+printed = true
+tags = ["sim-racing", "8040-profile", "led-matrix", "cosmic-unicorn", "mount"]
+
+# The default part="plate" body is all three parts laid out flat for printing;
+# these split them into individually downloadable STL/3MF bodies.
+[[parts]]
+name = "bracket"
+defines = ['part="bracket"']
+
+[[parts]]
+name = "frame"
+defines = ['part="frame"']
+
+[[parts]]
+name = "ring"
+defines = ['part="ring"']
+
+# Render-only: the three parts mounted on the rail with the board ghosted in.
+# Gallery imagery, not a printable body — no STL/3MF, skipped by the geometry gate.
+[[parts]]
+name = "assembly"
+defines = ['part="assembly"']
+render_only = true
+
+[print]
+material = "PETG (A1 is open-frame — ASA warps at this footprint)"
+layer_height_mm = 0.2
+infill = "40-50%"
+walls = 4
+supports = false
+orientation = "all flat in the plate: bracket rail-face down (25° wall self-supports, M5 bores teardropped), frame back-face down (notches open upward), ring front-face down"
+notes = "5 mm brim on frame and ring; textured PEI against corner lift. No supports, no bridges beyond trivial spans (nut-pocket floors, zip-slot ceilings). Modelled, geometry-verified, and test-printed."
+
+[[bom]]
+name = "M8×14 socket head + 8040 T-nut (bracket → rail)"
+qty = 4
+
+[[bom]]
+name = "M5×30 socket head + washer + nut (frame flange → wall)"
+qty = 4
+spec = "heads sink into front counterbores; washers + nuts on the wall's monitor side"
+
+[[bom]]
+name = "M4×14 + hex nut (ring → board → frame sandwich)"
+qty = 5
+spec = "captive nuts drop into the frame's back-opening pockets"
+
+[[links]]
+label = "uniflag firmware (the SimHub virtual flag this displays)"
+url = "https://github.com/nickolaj-jepsen/uniflag"
+
+[[links]]
+label = "Pimoroni Cosmic Unicorn (the board this holds)"
+url = "https://shop.pimoroni.com/products/cosmic-unicorn"

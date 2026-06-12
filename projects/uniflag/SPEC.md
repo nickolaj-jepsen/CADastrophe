@@ -3,9 +3,9 @@
 Mount a Pimoroni Cosmic Unicorn (32×32 RGB matrix, the owner's
 [uniflag firmware](https://github.com/nickolaj-jepsen/uniflag), SimHub over
 USB CDC) on the **outboard face of the right wheel-deck upright** of a GT Omega
-PRIME Lite, screen facing the driver. All units mm. Status: **modelled and
+PRIME Lite, screen facing the driver. All units mm. Status: **modelled,
 geometry-verified** (all three bodies watertight, single-shell, asserts green,
-strict board/plug collision test renders empty), **not yet printed**. Board
+strict board/plug collision test renders empty), **and test-printed**. Board
 geometry in [docs/](docs/).
 
 ## Design
