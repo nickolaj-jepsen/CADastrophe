@@ -52,5 +52,3 @@ guard against first-layer squish.
 
 Measured interfaces, coordinate frame, rev 1 → rev 2 changes, and verified
 clearances: [SPEC.md](SPEC.md).
-
-![preview](preview.png)

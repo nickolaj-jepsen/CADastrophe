@@ -6,9 +6,6 @@ output/
 # Generated gallery site (rebuild with `scad site`)
 _site/
 
-# Committed previews live at projects/<name>/preview.png and are PNGs, so they
-# are not matched above and stay tracked.
-
 # Nix
 result
 result-*
