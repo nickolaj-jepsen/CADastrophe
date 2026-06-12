@@ -25,7 +25,7 @@ scad site --serve    # build the gallery site locally and preview on :8000
 Reproducible exports straight from source:
 
 ```sh
-nix build .#demo-tray   # -> result/demo-tray.stl + .3mf
+nix build .#ebrake-bracket   # -> result/ebrake-bracket.stl + .3mf
 nix build               # the whole gallery (all STL + 3MF)
 nix flake check         # geometry gate: every part must be watertight
 ```
@@ -49,8 +49,6 @@ release pipeline, and the Nix derivations all consume it. `scad validate
 
 ## Projects
 
-- **[demo-tray](projects/demo-tray/)** — a parametric rounded tray with mounting holes
-  (the starter example).
 - **[ebrake-bracket](projects/ebrake-bracket/)** — handbrake mount for a GT Omega
   PRIME Lite 8040 side rail.
 
