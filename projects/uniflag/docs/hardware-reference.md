@@ -46,8 +46,9 @@ GPIOs from [cosmic_unicorn.hpp](https://github.com/pimoroni/pimoroni-pico/blob/m
 
 Examples confirm labels: "adjust the brightness with LUX + and -", VOL +/- for volume ([examples README](https://github.com/pimoroni/unicorn/blob/main/examples/cosmic_unicorn/README.md)).
 
-**Mount implication: do not enclose the left or right PCB edges — all 9 buttons actuate from those edges.**
-*(Superseded 2026-06-11, owner caliper: plungers are flush rear-mounted — a locating skirt at the edge is fine; keep fingertip reach-in windows. See verified-dimensions.md.)*
+**Mount implication:** the plungers are flush, rear-mounted — nothing protrudes
+past the board edge, so a locating skirt at the edge is fine; the frame just
+needs fingertip reach-in windows over the button rows.
 
 ## 3. Onboard peripherals
 
@@ -55,11 +56,11 @@ Examples confirm labels: "adjust the brightness with LUX + and -", VOL +/- for v
 |---|---|---|
 | Speaker/amp | MAX98357AETE+T 3.2 W I2S mono amp + 30 mm 1 W speaker, attached to the **back** (front-view lower-right area; tallest back component) | schematic PDF; product page; back product photo |
 | Speaker grille | 12 thru-holes Ø2.0 mm, 4x3 grid, 6 mm pitch, x 134-152, y 30-42 | DXF (measured) |
-| Light sensor | Phototransistor on GP28/ADC2, front face, `light()` returns 0-4095 | module README; product page |
+| Light sensor | Phototransistor on GP28/ADC2, front face, left-hand edge at x ≈ 4, y ≈ 116; `light()` returns 0-4095 | module README; product page |
 | Battery connector | JST-PH 2-pin, silkscreened "BATTERY 5.5V MAX", back, bottom-centre-left; no charging hardware onboard | back photo; product page |
 | Qw/ST | 2x JST-SH 4-pin (Qwiic/STEMMA QT), I2C on GP4/GP5, side by side on the back at the bottom edge ("1 QW/ST 2") | module README; back photo |
 | Mute | No physical switch — GP22 drives the MAX98357A mute/enable in software | cosmic_unicorn.hpp; schematic |
-| USB | Micro-B on the back-mounted Pico; **side-entry at the front-view LEFT edge, centred 17 mm above the bottom edge** (caliper 2026-06-11; boot 30 mm past the edge). Plug enters parallel to the board plane | owner caliper + back photos |
+| USB | Micro-B on the back-mounted Pico; **side-entry at the front-view LEFT edge, centred 17 mm above the bottom edge**; boot 30 mm past the edge. Plug enters parallel to the board plane | back photos |
 
 ## 4. Physical dimensions & mounting (the load-bearing section)
 
@@ -75,7 +76,7 @@ Primary sources: official comparison chart on the product page, the [dimensional
 - **Hanging slot at top centre:** internal cutout x 94-110 (16 mm wide), y 198.35-201.35 (3 mm tall) with a small central keyhole notch up to y 202.54; ~2.6 mm of material remains above it (DXF, measured).
 - **LED active area:** first LED centre at (9, 9), 6 mm pitch, 32x32 → last centre (195, 195); 186 x 186 mm centre-to-centre (dimensional drawing: 9.00 edge offset, 6.00 pitch).
 - **Back-side keep-outs for a flush mount:** 30 mm speaker puck (front-view lower-right quadrant, behind the grille at x 134-152 / y 30-42), Pico module along the bottom-left, JST-PH + 2x Qw/ST + Reset along the bottom-centre, edge button bodies along left/right edges. Official overall depth is 10.2 mm; with ~1.6 mm PCB and ~2 mm front LEDs that implies roughly 6-7 mm of rear component height (speaker tallest) — standoffs of >= 8 mm are a safe starting point, verify physically.
-- **Cable clearance:** micro-USB enters from the front-view left edge ~20 mm above the bottom corner; leave >= 30 mm lateral clearance for plug + bend. Battery/Qw/ST cables exit downward from the back bottom edge.
+- **Cable clearance:** micro-USB enters from the front-view left edge 17 mm above the bottom corner; leave >= 30 mm lateral clearance for plug + bend. Battery/Qw/ST cables exit downward from the back bottom edge.
 - Mechanically, the Pico W and Pico 2 W revisions share the same PCB CAD: the current product page still links the Feb-2023 schematic and Jul-2023 drawing/DXF for Cosmic.
 
 ## 5. Documentation links found in the repos
@@ -95,16 +96,28 @@ From the product page:
 
 Also in pimoroni-pico: C++ library at `libraries/cosmic_unicorn/` ([README](https://github.com/pimoroni/pimoroni-pico/blob/main/libraries/cosmic_unicorn/README.md), [cosmic_unicorn.hpp](https://github.com/pimoroni/pimoroni-pico/blob/main/libraries/cosmic_unicorn/cosmic_unicorn.hpp)); MicroPython examples in `pimoroni/unicorn` at [examples/cosmic_unicorn/](https://github.com/pimoroni/unicorn/tree/main/examples/cosmic_unicorn).
 
-## Open questions (need physical measurement or user input)
+## Measured on the board in hand
 
-- Exact rear component stack height above the PCB (speaker puck, Pico module, JST connectors) for standoff length — official depth is 10.2 mm overall with no breakdown; physically measure the speaker height before fixing standoff length (estimate 6-7 mm, suggest >= 8 mm standoffs)
-- PCB thickness (assumed 1.6 mm, not published) — **answered 2026-06-11** (owner caliper): border stack ~2.0 mm
-- How far the edge-button caps protrude beyond the PCB edge (looks ~1 mm in photos) — **answered 2026-06-11**: rear-mounted, flush plungers, nothing protrudes
-- Exact recess of the micro-USB connector relative to the left board edge and minimum plug clearance — **answered 2026-06-11**: centre 17 mm above the bottom edge, boot 30 mm past the edge (owner's cable)
-- Which revision the user owns (original Pico W vs Pico 2 W, Dec-2024 onward) — mechanically identical per the shared CAD files on the product page, but worth confirming since firmware builds differ
-- Exact location of the front-face phototransistor (light sensor) so the mount/bezel does not shade it — **answered 2026-06-11** (owner caliper, second pass): front-view LEFT edge, x ≈ 4 / y ≈ 116; see verified-dimensions.md
-- Board weight (not published anywhere found)
-- Whether the M2 mounting holes are plated/grounded (affects use of metal screws against an aluminium rig)
+These were not published and are now measured facts the model cuts to:
+
+- Border stack thickness ~2.0 mm (front LED panel + PCB; not the bare 1.6 PCB).
+- Edge buttons are rear-mounted with flush plungers — nothing protrudes past the
+  board edge; switch bodies sit ~5 mm in from the edge on the back.
+- micro-USB port centre 17 mm above the bottom edge; a plugged boot reaches
+  30 mm past the left board edge.
+- Light sensor on the front-view LEFT edge, x ≈ 4, y ≈ 116.
+- Rear component map confirmed roughly as drawn (±3 mm boxes hold).
+
+## Still open
+
+- Exact rear component stack height for standoff length — official depth is
+  10.2 mm overall with no breakdown (speaker ~6-7 mm estimated); not load-bearing
+  for this mount, which holds the board by its perimeter and leaves the back open.
+- The Pico W and Pico 2 W boards are mechanically identical per the shared CAD
+  files; firmware builds differ, so confirm which one is in hand for software.
+- Bare-board weight (not published; design the cantilever for ~500 g).
+- Whether the M2 mounting holes are plated/grounded — moot here, the mount uses
+  none of them.
 
 ## Sources
 

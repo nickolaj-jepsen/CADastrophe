@@ -14,8 +14,8 @@ clamp ring; sensor window in the left lip). Render/verify one body
 with `scad render uniflag --tag frame -D 'part="frame"'`; `part="assembly"`
 shows the fit, `part="collide"` must render empty.
 
-**Key params:** `gap=42` (rail → board edge, fits the measured 30 mm micro-B
-boot), `yaw=25`, `chan_slack=0.35` (board float), `bd_clr=0.4`,
+**Key params:** `gap=42` (rail → board edge, fits the 30 mm micro-B boot),
+`yaw=25`, `chan_slack=0.35` (board float), `bd_clr=0.4`,
 `usb_y`/`btnl_y`/`btnr_y` (edge windows), `m5_rows`/`col_sp` (flange bolt
 grid), `m8_y` rows, `board_y0`.
 

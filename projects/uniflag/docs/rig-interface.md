@@ -31,8 +31,7 @@ answers in the design interview (2026-06-10).
   bend room).
 - Panel **top edge ≈ underside of the wheel-deck beam** (just below wheel-hub
   height).
-- **Fixed 25° yaw toward the seat** (exposed as a parameter, default `yaw=25`;
-  was 15 through rev 2).
+- **Fixed 25° yaw toward the seat** (exposed as a parameter, default `yaw=25`).
 
 ## Environment / decisions from the interview
 

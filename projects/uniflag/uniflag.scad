@@ -31,8 +31,7 @@
 //  in that front view and +z = from the board's back toward the DRIVER
 //  (the wall sits at -z). +z must point at the viewer of the front
 //  view: with x right and y up, a rigward +z makes the space
-//  left-handed and silently models the mirror image — an earlier rev
-//  shipped exactly that bug.
+//  left-handed and silently models the mirror image.
 //
 //  Print (Bambu A1, open frame -> PETG over ASA): all three parts flat
 //  as laid out (part="plate"), >=4 walls, brim on frame + ring. No
@@ -46,7 +45,7 @@ $fa = 2; $fs = 0.5;
 
 part = "plate"; // [plate, bracket, frame, ring, assembly, collide]
 
-/* [Board — Pimoroni Cosmic Unicorn, DXF-exact + owner's calipers 2026-06-10] */
+/* [Board — Pimoroni Cosmic Unicorn, DXF-exact + measured] */
 bd        = 204;    // square board edge
 bd_r      = 3;      // board corner radius
 pcb_t     = 2.0;    // border stack thickness (measured ~2.0 — NOT the bare 1.6)
@@ -57,7 +56,7 @@ chan_slack = 0.35;  // board float in the grip channel (zero = rattle-free but r
 
 /* [Front ring] */
 lip       = 5;      // front lip, all four edges
-sens_y    = [108, 124]; // light-sensor window in the LEFT lip (sensor at (4, 116), caliper 2026-06-11)
+sens_y    = [108, 124]; // light-sensor window in the LEFT lip (sensor at (4, 116))
 ring_t    = 3;      // ring plate thickness
 foot_ch   = 0.6;    // elephant-foot chamfer on bed-face perimeters
 
@@ -67,7 +66,7 @@ band_w    = 4;      // structural band thickness outside the board
 fr_d      = 12;     // frame depth — uniform; the back face IS the wall contact plane
 
 /* [Edge windows — board-edge mm, y from board bottom / x from board left] */
-usb_cy    = 17;         // port centreline above the bottom edge (re-measured 2026-06-11)
+usb_cy    = 17;         // port centreline above the bottom edge
 usb_y     = [11, 23];   usb_nd = 9;   // USB tunnel depth (boot reaches 8 behind the board)
 // Buttons are rear-mounted with flush plungers (bodies ~5 in from the edge,
 // nothing protrudes) — the windows are fingertip reach-ins. Their depth
@@ -353,7 +352,7 @@ module ring() {
         // no button openings: the plungers actuate behind the board, the
         // frame's reach-in windows alone cover them
         // USB: skirt-deep only — the boot tops out at the board's FRONT
-        // face (caliper 2026-06-11), so the face ring runs unbroken over it
+        // face, so the face ring runs unbroken over it
         tag("remove") edge_notch(-1, usb_y[0], usb_y[1], -lap, chan_t + lap);
         // M4 through-bores (the M5 heads stop inside the frame flange and
         // never reach the ring)
@@ -452,7 +451,7 @@ module place_on_wall() {
 
 // USB plug boot keep-out: straight micro-B inserted at the port (centre
 // usb_cy above the bottom edge; boot dia ~10, topping out at the board's
-// FRONT face — caliper-tested 2026-06-11), running toward the rail.
+// FRONT face), running toward the rail.
 module plug_ghost() {
     color("crimson", 0.5)
         translate([-half - plug_len, by(usb_cy) - 5, -8])
