@@ -11,6 +11,7 @@ REPORT_PY="$SCAD_LIB/geometry_report.py"
 META_PY="$SCAD_LIB/project_meta.py"
 FONT="DejaVu-Sans"
 IMGSIZE="${SCAD_IMGSIZE:-900,900}"
+SS_IMGSIZE="${SCAD_SS_IMGSIZE:-2700,2700}"   # 3× supersample source for the OpenSCAD assembly hero
 COLORSCHEME="${SCAD_COLORSCHEME:-Tomorrow}"
 
 die() { echo "scad: $*" >&2; exit 1; }
@@ -103,8 +104,10 @@ build_3mf() {  # scad out
     openscad --backend=Manifold "${defs[@]}" -o "$2" "$1"
 }
 
-# Emit each [[parts]] entry from project.toml as "name<TAB>define...". Empty
-# output (and success) when there is no project.toml or no parts.
+# Emit each [[parts]] entry from project.toml as "name<TAB>mode<TAB>define...",
+# where mode is "build" (export STL/3MF + render) or "render" (render-only, e.g.
+# an assembled view — no artifacts, kept out of the geometry gate). Empty output
+# (and success) when there is no project.toml or no parts.
 project_parts() {  # name
   python3 "$META_PY" "$ROOT/projects/$1" --parts
 }
@@ -129,6 +132,61 @@ overlay_bbox() {  # png bboxtext
   magick "$1" -font "$FONT" -pointsize 20 -fill white \
     -undercolor '#000000aa' -gravity SouthWest \
     -annotate +10+10 "bbox  $2 mm" "$1"
+}
+
+# Headless, GPU-free STL→PNG via f3d (PBR + SSAO). Primary backend is EGL on
+# Mesa's llvmpipe (no display, no Xvfb); fallback is GLX inside a virtual X
+# server. __EGL_VENDOR_LIBRARY_FILENAMES (F3D_EGL_VENDOR, exported by the flake)
+# is the load-bearing var that makes a GPU-less CI runner pick llvmpipe.
+f3d_headless() {  # model out [extra f3d args...]
+  local model="$1" out="$2"; shift 2
+  local opts=(
+    "$model" --output "$out" --resolution "$IMGSIZE" --up=+Z
+    --ambient-occlusion --tone-mapping --anti-aliasing=ssaa
+    --grid --grid-unit=10 --grid-color="#d5d9de" --background-color="#eef0f2"
+    "$@"
+  )
+  if env __EGL_VENDOR_LIBRARY_FILENAMES="${F3D_EGL_VENDOR:-}" \
+         LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe \
+         f3d --rendering-backend=egl "${opts[@]}" >/dev/null 2>&1; then
+    return 0
+  fi
+  echo "scad: f3d EGL render failed, retrying under Xvfb+GLX" >&2
+  env LIBGL_ALWAYS_SOFTWARE=1 __GLX_VENDOR_LIBRARY_NAME=mesa \
+    xvfb-run -a -s "-screen 0 1024x1024x24" \
+      f3d --rendering-backend=glx "${opts[@]}"
+}
+
+# One gallery view from an STL. iso is the perspective hero angle; the
+# orthographic faces (front/top/right) match the OpenSCAD view_rot conventions.
+f3d_png() {  # stl out view
+  local stl="$1" out="$2" view="$3"
+  case "$view" in
+    iso)   f3d_headless "$stl" "$out" --camera-direction=-1,1,-0.7 ;;
+    front) f3d_headless "$stl" "$out" --camera-orthographic --camera-direction=0,1,0 ;;
+    top)   f3d_headless "$stl" "$out" --camera-orthographic --camera-direction=0,0,-1 ;;
+    right) f3d_headless "$stl" "$out" --camera-orthographic --camera-direction=-1,0,0 ;;
+    *)     die "f3d_png: unknown view '$view'" ;;
+  esac
+}
+
+# Supersampled OpenSCAD render for render-only views that have no STL (the
+# assembly hero): render at SS_IMGSIZE and downscale to IMGSIZE for clean edges.
+# iso is perspective to match the f3d hero; no axis/scale overlay — a context shot.
+render_png_ss() {  # scad out view
+  local scad="$1" out="$2" view="$3" rot proj=ortho ss
+  rot="$(view_rot "$view")" || die "render_png_ss: unknown view '$view'"
+  [ "$view" = iso ] && proj=perspective
+  ss="${out%.png}.ss.png"
+  local defs=() d
+  for d in "${SCAD_DEFINES[@]}"; do defs+=(-D "$d"); done
+  env -u DISPLAY -u WAYLAND_DISPLAY QT_QPA_PLATFORM=offscreen \
+    openscad --backend=Manifold --render \
+      --camera="0,0,0,$rot,0" --viewall --autocenter \
+      --projection="$proj" --colorscheme="$COLORSCHEME" --imgsize="$SS_IMGSIZE" \
+      "${defs[@]}" -o "$ss" "$scad"
+  magick "$ss" -filter Lanczos -resize "${IMGSIZE/,/x}" "$out"
+  rm -f "$ss"
 }
 
 cmd_new() {
@@ -167,19 +225,26 @@ SCAD_BODY
     printf '# %s\n\n' "$name"
     printf 'One-line description of the part and what it is for.\n\n'
     printf '**Key params:** size=30, wall=2, fillet=3 (mm)\n\n'
-    printf '**Print:** orientation / 0.2 mm layers / supports? \n\n'
-    printf '![preview](preview.png)\n'
+    printf '**Print:** orientation / 0.2 mm layers / supports? \n'
   } > "$dir/README.md"
   {
     printf '# Metadata for the gallery site and release pipeline. All keys are\n'
+    # shellcheck disable=SC2016  # backticks are literal markdown in the emitted file
     printf '# optional — delete what does not apply. `scad validate %s` checks it.\n\n' "$name"
-    printf '[project]\ntitle = "%s"\ndescription = ""\nstatus = "wip"              # wip | released\ntags = []\n\n' "$name"
+    printf '[project]\ntitle = "%s"\ndescription = ""\nstatus = "wip"              # wip | released\nprinted = false             # set true ONLY after a real test print\ntags = []\n\n' "$name"
     cat <<'TOML_TAIL'
 # Multi-part projects: one [[parts]] block per body. Each adds
 # <name>-<part>.stl/.3mf artifacts next to the full <name>.stl.
 # [[parts]]
 # name = "bracket"
 # defines = ['part="bracket"']
+
+# render_only = true marks a view, not a printable body: the gallery renders
+# its PNGs (e.g. an assembled view) but builds no STL/3MF and skips the gate.
+# [[parts]]
+# name = "assembly"
+# defines = ['part="assembly"']
+# render_only = true
 
 # [print]
 # material = "PLA"
@@ -346,7 +411,8 @@ build_one() {
     [ -n "$line" ] || continue
     IFS=$'\t' read -r -a fields <<<"$line"
     validate_tag "${fields[0]}"
-    SCAD_DEFINES=("${fields[@]:1}")
+    [ "${fields[1]}" = render ] && continue   # render-only parts have no STL/3MF
+    SCAD_DEFINES=("${fields[@]:2}")
     if build_stl "$scad" "$outdir/$name-${fields[0]}.stl" \
        && build_3mf "$scad" "$outdir/$name-${fields[0]}.3mf"; then
       echo "built $outdir/$name-${fields[0]}.stl and .3mf"
@@ -373,21 +439,6 @@ cmd_build() {
   build_one "$target"
 }
 
-cmd_preview() {
-  local name="${1:-}"
-  [ -n "$name" ] || die "usage: scad preview <name>"
-  local scad out tmp stl bbox
-  scad="$(project_scad "$name")"
-  out="$ROOT/projects/$name/preview.png"
-  tmp="$(mktmp)"
-  stl="$tmp/$name.stl"
-  build_stl "$scad" "$stl"
-  bbox="$(bbox_line "$stl")"
-  render_png "$scad" "$out" "$(view_rot iso)"
-  overlay_bbox "$out" "$bbox"
-  echo "$out"
-}
-
 cmd_validate() {
   local target="${1:-}"
   [ -n "$target" ] || die "usage: scad validate <name|--all>"
@@ -405,15 +456,21 @@ cmd_validate() {
   python3 "$META_PY" "$ROOT/projects/$target" --check
 }
 
-# The four gallery views the site uses, rendered from the project source with
-# the current SCAD_DEFINES, plus the bbox overlay from the matching STL.
-site_views() {  # scad outdir base stl
-  local scad="$1" outdir="$2" base="$3" stl="$4" bbox v out
-  bbox="$(bbox_line "$stl")"
+# The four gallery views the site uses. A printable body ($4 = its STL) renders
+# prettily with f3d (PBR + SSAO) and gets a bbox overlay; a render-only view
+# (assembly) has no STL, so it falls back to a supersampled OpenSCAD render of
+# the source with no overlay — its bbox spans ghost geometry, not meaningful.
+site_views() {  # scad outdir base [stl]
+  local scad="$1" outdir="$2" base="$3" stl="${4:-}" bbox v out
+  [ -n "$stl" ] && bbox="$(bbox_line "$stl")"
   for v in iso front top right; do
     out="$outdir/${base}_${v}.png"
-    render_png "$scad" "$out" "$(view_rot "$v")"
-    overlay_bbox "$out" "$bbox"
+    if [ -n "$stl" ]; then
+      f3d_png "$stl" "$out" "$v"
+      overlay_bbox "$out" "$bbox"
+    else
+      render_png_ss "$scad" "$out" "$v"
+    fi
     echo "$out"
   done
 }
@@ -432,9 +489,14 @@ site_assets() {  # name
   while IFS= read -r line; do
     [ -n "$line" ] || continue
     IFS=$'\t' read -r -a fields <<<"$line"
-    SCAD_DEFINES=("${fields[@]:1}")
-    site_views "$scad" "$outdir" "$name-${fields[0]}" "$outdir/$name-${fields[0]}.stl" \
-      || { rc=1; break; }
+    validate_tag "${fields[0]}"
+    SCAD_DEFINES=("${fields[@]:2}")
+    if [ "${fields[1]}" = render ]; then
+      site_views "$scad" "$outdir" "$name-${fields[0]}" || { rc=1; break; }
+    else
+      site_views "$scad" "$outdir" "$name-${fields[0]}" "$outdir/$name-${fields[0]}.stl" \
+        || { rc=1; break; }
+    fi
   done <<<"$parts_out"
   SCAD_DEFINES=("${saved[@]}")
   return "$rc"
@@ -507,7 +569,6 @@ Usage:
                              build STL and print the geometry report
   scad build <name|--all>    export STL + 3MF to output/ (plus per-part
                              <name>-<part>.* for project.toml [[parts]])
-  scad preview <name>        (re)generate committed projects/<name>/preview.png
   scad validate <name|--all> check project.toml against the metadata schema
   scad site [--serve] [--skip-render]
                              build the static gallery site into _site/
@@ -529,7 +590,6 @@ main() {
     render)         cmd_render "$@" ;;
     verify)         cmd_verify "$@" ;;
     build)          cmd_build "$@" ;;
-    preview)        cmd_preview "$@" ;;
     validate)       cmd_validate "$@" ;;
     site)           cmd_site "$@" ;;
     list|ls)        cmd_list "$@" ;;

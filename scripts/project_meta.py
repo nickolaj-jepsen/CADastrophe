@@ -7,7 +7,7 @@ the `scad` CLI shells out to it and site_gen.py imports it.
 
 Usage:
     project_meta.py PROJECT_DIR --json    # merged metadata, defaults applied
-    project_meta.py PROJECT_DIR --parts   # one line per part: name<TAB>define...
+    project_meta.py PROJECT_DIR --parts   # one line per part: name<TAB>mode<TAB>define...
     project_meta.py PROJECT_DIR --check   # validate; warnings to stderr
 
 Exit codes:
@@ -32,11 +32,13 @@ SCHEMA = {
         "title": str,
         "description": str,
         "status": str,
+        "printed": bool,
         "tags": (list, str),
     },
     "parts": {
         "name": str,
         "defines": (list, str),
+        "render_only": bool,
     },
     "print": {
         "material": str,
@@ -147,9 +149,11 @@ def load(projdir):
         "title": proj.get("title") or name,
         "description": proj.get("description") or readme_first_paragraph(projdir),
         "status": proj.get("status", "wip"),
+        "printed": bool(proj.get("printed", False)),
         "tags": proj.get("tags", []),
         "parts": [
-            {"name": p["name"], "defines": p.get("defines", ['part="%s"' % p["name"]])}
+            {"name": p["name"], "defines": p.get("defines", ['part="%s"' % p["name"]]),
+             "render_only": bool(p.get("render_only", False))}
             for p in parts
             if isinstance(p, dict) and isinstance(p.get("name"), str)
         ],
@@ -165,7 +169,7 @@ def main(argv=None):
     p.add_argument("projdir", help="path to the project directory")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--json", action="store_true", help="emit merged metadata as JSON")
-    g.add_argument("--parts", action="store_true", help="emit 'name<TAB>define...' per part")
+    g.add_argument("--parts", action="store_true", help="emit 'name<TAB>mode<TAB>define...' per part")
     g.add_argument("--check", action="store_true", help="validate the file")
     args = p.parse_args(argv)
 
@@ -196,7 +200,8 @@ def main(argv=None):
 
     if args.parts:
         for part in meta["parts"]:
-            print("\t".join([part["name"], *part["defines"]]))
+            mode = "render" if part["render_only"] else "build"
+            print("\t".join([part["name"], mode, *part["defines"]]))
         return 0
 
     meta.pop("_raw")

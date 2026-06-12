@@ -221,9 +221,14 @@ Keep the README short — it's the prose document (rendered on the project's gal
 Structured facts belong in `projects/<project>/project.toml`, not in README prose: print
 settings (`[print]`), hardware (`[[bom]]`), tags/status, related links, and `[[parts]]` for
 multi-part projects (each adds `<project>-<part>.stl/.3mf` artifacts built with its `-D`
-defines). Whenever hardware or print guidance changes, update project.toml and run
+defines). A part with `render_only = true` (e.g. an `assembly` body that places the parts
+in situ) is the exception: it's rendered for the gallery but builds no artifacts and is
+skipped by the geometry gate, so it may be non-manifold or use translucent ghost geometry.
+Whenever hardware or print guidance changes, update project.toml and run
 `scad validate <project>` before finishing.
 
-When the part is final, refresh the gallery image with `scad preview <project>` (writes the
-committed `projects/<project>/preview.png`) and set `status = "released"` in project.toml.
-The gallery site itself regenerates automatically on push to `main`.
+When the part is final, set `status = "released"` in project.toml; once you've actually
+test-printed the committed geometry, also set `printed = true` (it drives the gallery's
+print-verified badge — never set it for a design you haven't printed). The gallery site
+renders all imagery from source and regenerates automatically on push to `main` — no
+preview image is committed.

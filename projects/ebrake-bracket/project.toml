@@ -4,6 +4,7 @@
 title = "E-brake bracket"
 description = "Gusseted L-bracket mounting a USB hall-effect handbrake to a GT Omega PRIME Lite 8040 side rail."
 status = "released"
+printed = true
 tags = ["sim-racing", "bracket", "8040-profile", "handbrake"]
 
 [print]

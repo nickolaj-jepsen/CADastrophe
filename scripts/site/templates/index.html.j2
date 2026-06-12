@@ -4,9 +4,9 @@
 <div class="cards">
   {% for p in projects %}
   <a class="card" href="{{ rel }}{{ p.name }}/index.html">
-    {% if p.thumb %}<img src="{{ rel }}{{ p.name }}/{{ p.thumb }}" alt="{{ p.title }}" loading="lazy">{% endif %}
+    {% if p.hero %}<img src="{{ rel }}{{ p.name }}/{{ p.hero.src }}" alt="{{ p.hero.alt }}" loading="lazy">{% endif %}
     <div class="card-body">
-      <h2>{{ p.title }}{% if p.status == 'wip' %} <span class="badge wip">WIP</span>{% endif %}</h2>
+      <h2>{{ p.title }}{% if p.status == 'wip' %} <span class="badge wip">WIP</span>{% endif %}{% if p.printed %} <span class="badge printed">✓ Print-verified</span>{% endif %}</h2>
       <p>{{ p.description }}</p>
       {% if p.tags %}
       <div class="tags">

@@ -20,20 +20,32 @@ auto-discovers it and `nix build .#<name>` renders its STL).
   with native axis/scale rulers and a bbox overlay, written to `output/`.
 - `scad verify <name>` — build STL and print the geometry report (watertight, bbox, volume, shells).
 - `scad build <name|--all>` — export STL + 3MF (plus `<name>-<part>.*` for `[[parts]]` in
-  project.toml). `scad preview <name>` — refresh the committed preview.png.
+  project.toml).
 - `scad validate <name|--all>` — check project.toml against the metadata schema.
 - `scad site [--serve]` — build the static gallery site into `_site/` (CI does this on publish).
+  Gallery thumbnails of printable bodies are rendered with **f3d** (PBR + SSAO) from the
+  built STLs (iso = perspective hero, faces = ortho); render-only assembly views fall back
+  to supersampled OpenSCAD. The flake bundles Mesa + xvfb-run so f3d renders headless
+  (EGL/llvmpipe) on GPU-less CI — `scad render`/`verify` stay pure OpenSCAD.
 
 ## Conventions
 - **Millimetres**, always. Resolution via `$fa=2; $fs=0.5;` (prefer over a large `$fn`).
 - **No cosmetic text/debossing** on parts (version markers, labels, logos) — keep
   surfaces clean. Functional geometry only.
-- `output/` is gitignored and regenerated. Commit only source and `projects/<name>/preview.png`.
+- `output/` is gitignored and regenerated. Commit only source — the gallery site
+  renders all imagery from it (no preview images are committed).
 - **Metadata lives in `projects/<name>/project.toml`** (all keys optional): title,
-  description, status, tags, print settings, BOM, links, and `[[parts]]` for multi-part
-  projects. The gallery site, release pipeline, and Nix derivations consume it — keep
-  BOM/print settings structured there, not duplicated as README prose. Run
-  `scad validate <name>` after editing it.
+  description, status, printed, tags, print settings, BOM, links, and `[[parts]]` for
+  multi-part projects. The gallery site, release pipeline, and Nix derivations consume
+  it — keep BOM/print settings structured there, not duplicated as README prose. Run
+  `scad validate <name>` after editing it. `printed` is a boolean orthogonal to
+  `status`: set it `true` only after a real test print of the committed geometry —
+  it drives the gallery's print-verified badge, and absent/`false` shows "not yet
+  printed" (so never claim a print you haven't done).
+- **Assembled views:** a `[[parts]]` entry with `render_only = true` (e.g. an
+  `assembly` body composing the parts in place) is gallery imagery only — the site
+  renders its views, but it ships no STL/3MF and is skipped by the geometry gate, so
+  it can be non-manifold or use translucent ghost geometry.
 - Reproducible builds: `nix build .#<name>` (one project's STL+3MF) · `nix build` (whole
   gallery) · `nix flake check` (geometry gate: watertight or fail). Nix only discovers
   **git-tracked** projects — `git add` a new project before `nix build` or `nix flake check`

@@ -32,15 +32,26 @@
         # time) wrapping scripts/scad.sh, with all runtime tools on PATH.
         scad = pkgs.writeShellApplication {
           name = "scad";
+          # The script contains non-ASCII (em-dashes) in help text. shellcheck
+          # (GHC) derives its stdout encoding from the locale, and the Nix build
+          # sandbox runs under C/POSIX, so emitting a warning that echoes such a
+          # line aborts with "commitBuffer: invalid argument". Force UTF-8.
+          derivationArgs.LC_ALL = "C.UTF-8";
           runtimeInputs = [
             pkgs.openscad-unstable
             pythonEnv
             pkgs.imagemagick
             pkgs.coreutils
+            pkgs.f3d        # gallery thumbnails (PBR + SSAO) from the built STLs
+            pkgs.mesa       # libEGL_mesa.so + llvmpipe: GPU-free EGL render in CI
+            pkgs.xvfb-run   # GLX-under-Xvfb fallback when EGL is unavailable
           ];
           text = ''
             export OPENSCADPATH="${openscadLibs}"
             export SCAD_LIB="${./scripts}"
+            # Pin glvnd to Mesa's software EGL vendor (absolute store path) so a
+            # GPU-less CI runner renders via llvmpipe instead of a missing driver.
+            export F3D_EGL_VENDOR="${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json"
           '' + builtins.readFile ./scripts/scad.sh;
         };
 
@@ -62,7 +73,10 @@
         # yields <name>-<part>.stl/.3mf built with that part's -D defines.
         mkProject = name:
           let
-            parts = (projectMeta name).parts or [ ];
+            # render_only parts (e.g. an assembled view) yield no STL/3MF: they
+            # are gallery imagery only, never release assets, never gated.
+            parts = builtins.filter (p: !(p.render_only or false))
+              ((projectMeta name).parts or [ ]);
             # Part names are interpolated into the build script and into
             # release asset names — enforce the same charset as project names.
             partName = p:
@@ -146,7 +160,7 @@
           OPENSCADPATH = openscadLibs;
           shellHook = ''
             echo "CADastrophe dev shell — OpenSCAD $(openscad --version 2>&1 | head -1)"
-            echo "Tools: scad {new,render,verify,build,preview,validate,site,list}  ·  openscad  ·  BOSL2 on OPENSCADPATH"
+            echo "Tools: scad {new,render,verify,build,validate,site,list}  ·  openscad  ·  BOSL2 on OPENSCADPATH"
           '';
         };
       });

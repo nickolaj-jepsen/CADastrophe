@@ -7,9 +7,45 @@
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/" } }
 </script>
 {% endblock %}
+
+{% macro downloads(dl) %}
+<div class="downloads">
+  {% if dl.primary %}
+  <a class="button primary" href="{{ dl.primary.url }}" download>⬇ Download to print <span class="fname">{{ dl.primary.label }} · {{ dl.primary.file }}</span></a>
+  {% for s in dl.secondary %}
+  <a class="button secondary" href="{{ s.url }}" download>{{ s.label }} <span class="fname">{{ s.file }}</span></a>
+  {% endfor %}
+  {% else %}
+  {# No 3MF — promote the first available file to the primary slot so the CTA is never empty. #}
+  {% for s in dl.secondary %}
+  <a class="button {{ 'primary' if loop.first else 'secondary' }}" href="{{ s.url }}" download>{% if loop.first %}⬇ Download to print {% endif %}{{ s.label }} <span class="fname">{{ s.file }}</span></a>
+  {% endfor %}
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro gallery(images, label) %}
+{% if images %}
+<div class="gallery">
+  {% for img in images %}
+  <a href="{{ img.src }}"><img src="{{ img.src }}" alt="{{ label }} — {{ img.view }}" loading="lazy"><span>{{ img.view }}</span></a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro stats_table(s) %}
+<table class="kv">
+  <tr><th>Bounding box</th><td>{{ s.bbox }}</td></tr>
+  <tr><th>Volume</th><td>{{ s.volume }}</td></tr>
+  <tr><th>Triangles</th><td>{{ s.triangles }}</td></tr>
+  <tr><th>Watertight</th><td>{{ "✓ yes" if s.watertight else "✗ NO" }}</td></tr>
+</table>
+{% endmacro %}
+
 {% block content %}
 <article class="project">
-  <h1>{{ project.title }}{% if project.status == 'wip' %} <span class="badge wip">WIP</span>{% endif %}</h1>
+  <h1>{{ project.title }}{% if project.status == 'wip' %} <span class="badge wip">WIP</span>{% endif %}{% if project.printed %} <span class="badge printed">✓ Print-verified</span>{% else %} <span class="badge not-printed">⚠ Not yet printed</span>{% endif %}</h1>
   <p class="description">{{ project.description }}</p>
   {% if project.tags %}
   <div class="tags">
@@ -17,70 +53,99 @@
   </div>
   {% endif %}
 
-  {% for a in project.artifacts %}
-  <section class="artifact">
-    {% if project.artifacts | length > 1 %}<h2>{{ a.label }}</h2>{% endif %}
+  {% if project.hero %}
+  <figure class="hero"><a href="{{ project.hero.src }}"><img src="{{ project.hero.src }}" alt="{{ project.hero.alt }}"></a></figure>
+  {% endif %}
 
-    <div class="viewer" data-stl="{{ a.stl }}">
+  <dl class="facts">
+    {% if project.facts.dimensions %}<div class="fact"><dt>Dimensions</dt><dd>{{ project.facts.dimensions }}</dd></div>{% endif %}
+    {% if project.facts.material %}<div class="fact"><dt>Material</dt><dd>{{ project.facts.material }}</dd></div>{% endif %}
+    <div class="fact"><dt>Supports</dt><dd{% if project.facts.supports %} class="warn"{% endif %}>{% if project.facts.supports is none %}—{% elif project.facts.supports %}Supports needed{% else %}Support-free{% endif %}</dd></div>
+    <div class="fact"><dt>Watertight</dt><dd class="{{ 'ok' if project.facts.watertight == 'yes' else 'warn' }}">{{ project.facts.watertight }}</dd></div>
+    <div class="fact"><dt>Print-tested</dt><dd class="{{ 'ok' if project.facts.printed else 'warn' }}">{{ "✓ verified" if project.facts.printed else "not yet" }}</dd></div>
+  </dl>
+
+  {% if project.primary %}
+  <section class="primary-print">
+    <p class="artifact-role">{{ project.primary.label }}</p>
+    {{ downloads(project.primary.downloads) }}
+    <button class="view-3d" type="button" aria-expanded="false">View in 3D</button>
+    <div class="viewer" data-stl="{{ project.primary.stl }}" hidden>
       <noscript><p>Interactive 3D preview needs JavaScript.</p></noscript>
     </div>
     <p class="viewer-hint">drag to orbit · scroll to zoom · right-drag to pan</p>
-
-    <div class="downloads">
-      {% for d in a.downloads %}
-      <a class="button" href="{{ d.url }}" download>⬇ {{ d.label }} <span class="fname">{{ d.file }}</span></a>
-      {% endfor %}
-    </div>
-
-    {% if a.images %}
-    <div class="gallery">
-      {% for img in a.images %}
-      <a href="{{ img.src }}"><img src="{{ img.src }}" alt="{{ a.label }} — {{ img.view }}" loading="lazy"><span>{{ img.view }}</span></a>
-      {% endfor %}
-    </div>
-    {% endif %}
-
-    {% if a.stats %}
-    <table class="kv">
-      <tr><th>Bounding box</th><td>{{ a.stats.bbox }}</td></tr>
-      <tr><th>Volume</th><td>{{ a.stats.volume }}</td></tr>
-      <tr><th>Triangles</th><td>{{ a.stats.triangles }}</td></tr>
-      <tr><th>Watertight</th><td>{{ "✓ yes" if a.stats.watertight else "✗ NO" }}</td></tr>
-    </table>
-    {% endif %}
-  </section>
-  {% endfor %}
-
-  {% if project.print %}
-  <section>
-    <h2>Print settings</h2>
-    <table class="kv">
-      {% if project.print.material %}<tr><th>Material</th><td>{{ project.print.material }}</td></tr>{% endif %}
-      {% if project.print.layer_height_mm %}<tr><th>Layer height</th><td>{{ project.print.layer_height_mm }} mm</td></tr>{% endif %}
-      {% if project.print.infill %}<tr><th>Infill</th><td>{{ project.print.infill }}</td></tr>{% endif %}
-      {% if project.print.walls %}<tr><th>Walls</th><td>{{ project.print.walls }}</td></tr>{% endif %}
-      {% if project.print.supports is defined %}<tr><th>Supports</th><td>{{ "yes" if project.print.supports else "no" }}</td></tr>{% endif %}
-      {% if project.print.orientation %}<tr><th>Orientation</th><td>{{ project.print.orientation }}</td></tr>{% endif %}
-    </table>
-    {% if project.print.notes %}<p class="notes">{{ project.print.notes }}</p>{% endif %}
+    {% if project.primary.stats %}{{ stats_table(project.primary.stats) }}{% endif %}
+    {{ gallery(project.primary.images, project.primary.label) }}
   </section>
   {% endif %}
 
-  {% if project.bom %}
-  <section>
-    <h2>Bill of materials</h2>
-    <table class="grid">
-      <thead><tr><th>Qty</th><th>Item</th><th>Spec</th></tr></thead>
-      <tbody>
-      {% for item in project.bom %}
-      <tr>
-        <td>{{ item.qty | default(1) }}×</td>
-        <td>{% if item.link %}<a href="{{ item.link }}">{{ item.name }}</a>{% else %}{{ item.name }}{% endif %}</td>
-        <td>{{ item.spec | default("") }}</td>
-      </tr>
-      {% endfor %}
-      </tbody>
-    </table>
+  {% if project.secondary_parts %}
+  <details class="parts">
+    <summary>Print parts separately — for multi-colour or different orientation</summary>
+    {% for part in project.secondary_parts %}
+    <section class="part">
+      <h3>{{ part.label | replace('-', ' ') | capitalize }}</h3>
+      {{ downloads(part.downloads) }}
+      <div class="viewer" data-stl="{{ part.stl }}" hidden>
+        <noscript><p>Interactive 3D preview needs JavaScript.</p></noscript>
+      </div>
+      {% if part.stats %}{{ stats_table(part.stats) }}{% endif %}
+      {{ gallery(part.images, part.label) }}
+    </section>
+    {% endfor %}
+  </details>
+  {% endif %}
+
+  {% for v in project.assembly_views %}
+  <section class="assembly">
+    <h2>{% if v.label == 'assembly' %}Assembled view{% else %}{{ v.label | replace('-', ' ') | capitalize }}{% endif %}</h2>
+    {{ gallery(v.images, v.label) }}
+  </section>
+  {% endfor %}
+
+  {% if project.print or project.bom %}
+  <section class="howto">
+    <h2>How to print</h2>
+    <div class="howto-cols">
+      {% if project.print %}
+      <div class="howto-settings">
+        <h3>Settings</h3>
+        <table class="kv">
+          {% if project.print.material %}<tr><th>Material</th><td>{{ project.print.material }}</td></tr>{% endif %}
+          {% if project.print.layer_height_mm %}<tr><th>Layer height</th><td>{{ project.print.layer_height_mm }} mm</td></tr>{% endif %}
+          {% if project.print.infill %}<tr><th>Infill</th><td>{{ project.print.infill }}</td></tr>{% endif %}
+          {% if project.print.walls %}<tr><th>Walls</th><td>{{ project.print.walls }}</td></tr>{% endif %}
+          {% if project.print.supports is defined %}<tr><th>Supports</th><td>{{ "yes" if project.print.supports else "no" }}</td></tr>{% endif %}
+          {% if project.print.orientation %}<tr><th>Orientation</th><td>{{ project.print.orientation }}</td></tr>{% endif %}
+        </table>
+        {% if project.print.notes %}<p class="notes">{{ project.print.notes }}</p>{% endif %}
+      </div>
+      {% endif %}
+      {% if project.bom %}
+      <div class="howto-bom">
+        <h3>Bill of materials</h3>
+        <table class="grid">
+          <thead><tr><th>Qty</th><th>Item</th><th>Spec</th></tr></thead>
+          <tbody>
+          {% for item in project.bom %}
+          <tr>
+            <td>{{ item.qty | default(1) }}×</td>
+            <td>{% if item.link %}<a href="{{ item.link }}">{{ item.name }}</a>{% else %}{{ item.name }}{% endif %}</td>
+            <td>{{ item.spec | default("") }}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if project.readme_html %}
+  <section class="readme">
+    <h2>Notes</h2>
+    {{ project.readme_html | safe }}
   </section>
   {% endif %}
 
@@ -104,13 +169,6 @@
   </section>
   {% endif %}
 
-  {% if project.readme_html %}
-  <section class="readme">
-    <h2>Notes</h2>
-    {{ project.readme_html | safe }}
-  </section>
-  {% endif %}
-
   {% if project.links %}
   <section>
     <h2>Links</h2>
@@ -120,5 +178,5 @@
   </section>
   {% endif %}
 </article>
-<script type="module" src="../static/viewer.js"></script>
+<script type="module" src="{{ rel }}static/viewer.js"></script>
 {% endblock %}
